@@ -1,0 +1,120 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    miikeskii's QoL Pack: the bundle. One BepInEx 5 plugin for Valheim that runs every module, each in its own section
+    of the bundle's settings. Build: dotnet build -c Release   (output: bin\Release\net472\QoLMods.dll)
+
+    This folder holds only the bundle itself: its plugin (src\Plugin.cs), the kit (kit\, the one copy to edit) and the
+    parts several modules share (parts\, such as the chest service, parts\Chests; the one copy to edit of each).
+    Each module's code stays in its own mod folder and is compiled from there (the ItemGroup "The modules" below), so
+    the bundle and each mod's single release are built from the same files. How to add a module: MODULES.md.
+
+    Every reference points at a DLL where it already lives and is never copied (Private=false). Override the two
+    folders on the command line if they are elsewhere, for example:
+      dotnet build -c Release -p:ValheimManaged="D:\Games\Valheim\valheim_Data\Managed" -p:ModProfile="D:\Profiles\Test"
+    No NuGet packages and no publicizer.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <AssemblyName>QoLMods</AssemblyName>
+    <RootNamespace>QoLMods</RootNamespace>
+    <Version>0.6.4</Version>
+    <!-- Keep the private repo's commit id out of the DLL's version text. -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <LangVersion>10.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <!-- Use the .NET Framework 4.7.2 reference assemblies installed on this machine instead of fetching a package. -->
+    <AutomaticallyUseReferenceAssemblyPackages>false</AutomaticallyUseReferenceAssemblyPackages>
+    <!-- Nothing to audit, and restore must not reach out to a package feed. -->
+    <NuGetAudit>false</NuGetAudit>
+  </PropertyGroup>
+
+  <!-- Made with AI, declared where Thunderstore asks AI-made mods to (its wiki page "LLMs and AI-generated files",
+       read 2026-09-27): here, which puts it in the DLL's AssemblyMetadata attributes, and in the README. -->
+  <ItemGroup>
+    <AssemblyMetadata Include="AI_Assisted_Creation" Value="This assembly was fully created with generative AI: its code was written by Claude agents (Anthropic, in Claude Code), directed by miikeskii." />
+    <AssemblyMetadata Include="AI_Model_Vendor" Value="Anthropic" />
+    <AssemblyMetadata Include="AI_Model" Value="Claude Opus 5 and Claude Opus 5.5" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <ValheimManaged Condition="'$(ValheimManaged)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed</ValheimManaged>
+    <ModProfile Condition="'$(ModProfile)' == ''">$(APPDATA)\Thunderstore Mod Manager\DataFolder\Valheim\profiles\Default</ModProfile>
+  </PropertyGroup>
+
+  <!--
+    The modules: each one's src\ folder, never its kit\ copy (the bundle compiles its own kit\) and never its
+    standalone\ folder (its single release's plugin). One line per module; tools\package.ps1 and tools\sync-kit.ps1
+    read the module folders from these lines.
+  -->
+  <ItemGroup>
+    <Compile Include="..\XPortalMapPicker\src\**\*.cs" Link="Modules\XPortalMapPicker\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\MapZoom\src\**\*.cs" Link="Modules\MapZoom\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\TraderCircles\src\**\*.cs" Link="Modules\TraderCircles\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\AddToCart\src\**\*.cs" Link="Modules\AddToCart\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!-- Every reference any module needs. A module that needs a new one adds it here and to its own project. -->
+  <ItemGroup>
+    <!-- The game (assembly_utils holds ZInput, for Map Zoom) -->
+    <Reference Include="assembly_utils">
+      <HintPath>$(ValheimManaged)\assembly_utils.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="assembly_valheim">
+      <HintPath>$(ValheimManaged)\assembly_valheim.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="assembly_guiutils">
+      <HintPath>$(ValheimManaged)\assembly_guiutils.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- Unity -->
+    <Reference Include="UnityEngine">
+      <HintPath>$(ValheimManaged)\UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(ValheimManaged)\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>$(ValheimManaged)\UnityEngine.PhysicsModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>$(ValheimManaged)\UnityEngine.InputLegacyModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(ValheimManaged)\UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>$(ValheimManaged)\UnityEngine.UIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(ValheimManaged)\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- BepInEx, HarmonyX and Jotunn, from the mod profile -->
+    <Reference Include="BepInEx">
+      <HintPath>$(ModProfile)\BepInEx\core\BepInEx.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(ModProfile)\BepInEx\core\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Jotunn">
+      <HintPath>$(ModProfile)\BepInEx\plugins\ValheimModding-Jotunn\Jotunn.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>

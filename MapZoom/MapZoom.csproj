@@ -1,0 +1,81 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Map Zoom: a BepInEx 5 plugin for Valheim, and a module of miikeskii's QoL Pack.
+    Build: dotnet build -c Release   (output: bin\Release\net472\MapZoom.dll)
+    This project builds the single release from src\ (the module), kit\ (a copy of the QoL Mods kit) and standalone\
+    (its own plugin). The bundle, ..\QoLMods, compiles src\ from here too. See ..\QoLMods\MODULES.md.
+
+    Every reference points at a DLL where it already lives and is never copied (Private=false).
+    Override the two folders on the command line if they are elsewhere, for example:
+      dotnet build -c Release -p:ValheimManaged="D:\Games\Valheim\valheim_Data\Managed" -p:ModProfile="D:\Profiles\Test"
+    No NuGet packages and no publicizer: the game's private members are reached by reflection, looked up by name when
+    the game starts.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <AssemblyName>MapZoom</AssemblyName>
+    <RootNamespace>MapZoom</RootNamespace>
+    <Version>0.1.0</Version>
+    <!-- Keep the private repo's commit id out of the DLL's version text. -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <LangVersion>10.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <!-- Use the .NET Framework 4.7.2 reference assemblies installed on this machine instead of fetching a package. -->
+    <AutomaticallyUseReferenceAssemblyPackages>false</AutomaticallyUseReferenceAssemblyPackages>
+    <!-- Nothing to audit, and restore must not reach out to a package feed. -->
+    <NuGetAudit>false</NuGetAudit>
+  </PropertyGroup>
+
+  <!-- Made with AI, declared where Thunderstore asks AI-made mods to (its wiki page "LLMs and AI-generated files",
+       read 2026-09-27): here, which puts it in the DLL's AssemblyMetadata attributes, and in the README. -->
+  <ItemGroup>
+    <AssemblyMetadata Include="AI_Assisted_Creation" Value="This assembly was fully created with generative AI: its code was written by Claude agents (Anthropic, in Claude Code), directed by miikeskii." />
+    <AssemblyMetadata Include="AI_Model_Vendor" Value="Anthropic" />
+    <AssemblyMetadata Include="AI_Model" Value="Claude Opus 5 and Claude Opus 5.5" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <ValheimManaged Condition="'$(ValheimManaged)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed</ValheimManaged>
+    <ModProfile Condition="'$(ModProfile)' == ''">$(APPDATA)\Thunderstore Mod Manager\DataFolder\Valheim\profiles\Default</ModProfile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The game: the map (assembly_valheim) and its input (ZInput, in assembly_utils) -->
+    <Reference Include="assembly_valheim">
+      <HintPath>$(ValheimManaged)\assembly_valheim.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="assembly_utils">
+      <HintPath>$(ValheimManaged)\assembly_utils.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- Unity -->
+    <Reference Include="UnityEngine">
+      <HintPath>$(ValheimManaged)\UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(ValheimManaged)\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- BepInEx, HarmonyX and Jotunn, from the mod profile -->
+    <Reference Include="BepInEx">
+      <HintPath>$(ModProfile)\BepInEx\core\BepInEx.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(ModProfile)\BepInEx\core\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Jotunn">
+      <HintPath>$(ModProfile)\BepInEx\plugins\ValheimModding-Jotunn\Jotunn.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>
