@@ -86,14 +86,17 @@ foreach ($doc in @('README.md', 'CHANGELOG.md')) {
 
 # Thunderstore asks an AI-made mod to say so in its README and in its project's AssemblyMetadata (its wiki page "LLMs
 # and AI-generated files", read 2026-09-27; his order: the package follows the policies). Refuse to pack without both.
-if (-not (Select-String -Path (Join-Path $bundleFolder 'README.md') -Pattern '**Made with AI.**' -SimpleMatch -Quiet)) { throw "README.md doesn't say it's made with AI, which Thunderstore asks of AI-made mods." }
+$readmePath = Join-Path $bundleFolder 'README.md'
+if (-not (Select-String -Path $readmePath -Pattern 'Made with AI' -SimpleMatch -Quiet) -or -not (Select-String -Path $readmePath -Pattern 'Claude' -SimpleMatch -Quiet)) {
+    throw "README.md doesn't say it's made with AI, and by which AI (Claude), which Thunderstore asks of AI-made mods."
+}
 if ($projectText -notmatch 'AssemblyMetadata\s+Include="AI_Assisted_Creation"') { throw "QoLMods.csproj has no AI_Assisted_Creation AssemblyMetadata, which Thunderstore asks of AI-made mods." }
 
-# What a mod manager lists under the title: the pack's own name (the title can't hold its apostrophe), that it's a work
-# in progress (his word, 2026-09-27) and made with AI, then the mods inside, by name only, so there is room for more;
-# their versions are in the README and the changelog.
+# What a mod manager lists under the title: the pack's own name (the title can't hold its apostrophe), then his own
+# words from the README's opening (2026-09-27), then the mods inside, by name only, so there is room for more; their
+# versions are in the README and the changelog.
 $names = ($modules | ForEach-Object { $_.Name }) -join ', '
-$description = "miikeskii's QoL Pack: Valheim quality-of-life mods, a work in progress. Client-side, one on/off switch per mod. Made with AI (Claude). Inside: $names."
+$description = "miikeskii's QoL Pack. Made with AI. A collection of Valheim quality-of-life mods, client-side, with an on/off switch for each. Inside: $names."
 if ($description.Length -gt 250) { throw "The description is $($description.Length) characters long; Thunderstore allows 250. Shorten its wording." }
 
 $buildArguments = @('build', (Join-Path $bundleFolder 'QoLMods.csproj'), '-c', 'Release', '-nologo')

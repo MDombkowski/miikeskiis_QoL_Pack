@@ -1,10 +1,6 @@
 # miikeskii's QoL Pack
 
-> **Still in the works.** While miikeskii keeps building this pack, it's listed only under Thunderstore's AI Generated category. Expect changes from one update to the next.
->
-> **Made with AI.** The code of every mod in the pack was written by Claude, Anthropic's AI (the Claude Opus 5 and Opus 5.5 models, working as Claude Code agents), for miikeskii, who directs it and tests it in game.
-
-All of miikeskii's Valheim quality-of-life mods in one package: one thing to install, and each mod with its own section and its own on/off switch in the settings.
+Made with AI. A collection of quality-of-life mods.
 
 ## What's inside
 
@@ -51,7 +47,7 @@ Look in `BepInEx\LogOutput.log`. The bundle writes one line at start listing eve
 
 ## Credits
 
-Each mod's credits, gathered: `CREDITS.md` in the package. Built with BepInEx, HarmonyX and Jötunn; the code written by Claude (Anthropic), as said at the top.
+Each mod's credits, gathered: `CREDITS.md` in the package. Built with BepInEx, HarmonyX and Jötunn. The code was written by Claude, Anthropic's AI (the Claude Opus 5 and Opus 5.5 models, working as Claude Code agents), for miikeskii.
 
 ## Licence
 

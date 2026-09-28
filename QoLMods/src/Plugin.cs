@@ -19,7 +19,7 @@ namespace QoLMods
     [NetworkCompatibility(CompatibilityLevel.NotEnforced, VersionStrictness.None)]
     public sealed class Plugin : BaseUnityPlugin
     {
-        internal const string Version = "0.6.4";
+        internal const string Version = "0.6.5";
 
         private readonly List<ModuleHost> hosts = new List<ModuleHost>();
 

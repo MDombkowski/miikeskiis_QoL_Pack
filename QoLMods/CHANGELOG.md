@@ -2,6 +2,11 @@
 
 Each mod inside keeps its own version and changelog; this one lists the bundle's releases and the versions inside each.
 
+## 0.6.5 (2026-09-27)
+
+- **The README opens** with *"Made with AI. A collection of quality-of-life mods."*, in miikeskii's words; the models that wrote the code are named in its Credits. The description matches.
+- **XPortal Map Picker 0.4.0**, **Map Zoom 0.1.0**, **Trader Circles 0.1.0** and **Add to Cart 0.3.3** are unchanged, and so are the parts.
+
 ## 0.6.4 (2026-09-27)
 
 - **On Thunderstore as miikeskiis QoL Pack:** the package is `miikeskii-miikeskiis_QoL_Pack` (it was `miikeskii-QoL_Pack`, whose 0.6.3 listing was rejected), so that miikeskii's name is in the title; a Thunderstore title can't hold an apostrophe. A mod manager takes it for a new mod: remove `miikeskii-QoL_Pack` or `drumcowski-QoL_Mods` before installing this one. The plugin ID, `modprojects.qolmods`, is unchanged, so the settings file carries over.
