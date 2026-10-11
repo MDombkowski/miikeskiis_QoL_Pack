@@ -4,6 +4,8 @@ Choose where an XPortal portal leads by clicking it on the map instead of findin
 
 [XPortal](https://github.com/SpikeHimself/XPortal) lets any portal lead to any other, picked from a drop-down list of portal names. This small companion mod adds a **Map** button beside that list. Click it, and the big map opens with a marker on every portal you could choose. Click a marker, and that portal becomes the destination.
 
+It can also show every portal as a pin on your big map and your minimap, kept up to date as portals are built, renamed or destroyed. That is on out of the box since 0.6.1 (see *Portals on your map*).
+
 **Also part of miikeskii's QoL Pack.** This mod is one of miikeskii's Valheim mods, which also come together as one package, *miikeskii's QoL Pack*. Install either this or the bundle: with both installed, this copy stands aside and the bundle's copy runs.
 
 ## How to use it
@@ -18,10 +20,19 @@ To leave the map without choosing, right-click, press Esc or press the map key. 
 
 While you are picking, the map's usual clicks are paused: a click on the map itself does nothing, a right click cancels instead of deleting a pin, and a double click doesn't add one. Dragging and zooming work as normal, and the markers follow.
 
+## Portals on your map
+
+**Portals on the large map** and **Portals on the minimap** are both on at first (since 0.6.1; switch either off). An older settings file still at an old default moves to the new one once; a setting you changed stays as you set it. Every portal in XPortal's list then shows as a pin, with the game's own white portal pin, like the pins you place, and its name below it on the big map when you zoom in far enough for the game to show pin names. Point at one on the big map and its name shows at any zoom (**Portal names on mouse-over**).
+
+- **Always current.** The pins follow XPortal's list, which the server keeps up to date: a new portal gets its pin within a second or so, a renamed one's name changes, and a destroyed one's pin goes.
+- **Nothing is saved or shared.** The pins are never saved with your map, never shared at a cartography table, and a right click doesn't delete them. Turn the setting off and they are gone.
+- **No map, no pins.** Like the Map button, the pins stay off in worlds played without a map and while the server has turned on XPortal's `PingMapDisabled` setting.
+- **While you pick** a destination, the pins step aside so the picker's own markers can be clicked, and come back when you are done.
+
 ## Good to know
 
 - **Only you need it.** The destination still reaches the server through XPortal's own OK button, exactly as when you pick from the list, so neither the server nor the other players need this mod.
-- **Nothing is added to your map.** The markers are drawn by this mod over the map, not made of map pins, so they are never saved, never shared at a cartography table, and gone as soon as you pick, cancel or leave the world. Your own pins are only hidden while you pick, and come back straight after. The other players stay on the map while you pick; a setting hides them too.
+- **Picking adds nothing to your map.** The markers are drawn by this mod over the map, not made of map pins, so they are never saved, never shared at a cartography table, and gone as soon as you pick, cancel or leave the world. Your own pins are only hidden while you pick, and come back straight after. The other players stay on the map while you pick; a setting hides them too.
 - **XPortal decides what you can choose.** The markers are exactly the portals in XPortal's list.
 - **Portals where you have never been show too**, such as a friend's portal; a setting hides them.
 - **No map, no button.** The Map button hides where XPortal hides its Ping button: in worlds played without a map, and when the server has turned on XPortal's `PingMapDisabled` setting.
@@ -35,7 +46,7 @@ While you are picking, the map's usual clicks are paused: a click on the map its
 
 ## Installing
 
-- **With Thunderstore Mod Manager:** Settings, then "Import local mod from file", and choose `drumcowski-XPortalMapPicker-0.4.0.zip`.
+- **With Thunderstore Mod Manager:** Settings, then "Import local mod from file", and choose `drumcowski-XPortalMapPicker-<version>.zip`.
 - **By hand:** copy `XPortalMapPicker.dll` into a folder named `XPortalMapPicker` inside `BepInEx\plugins`, so it ends up at `BepInEx\plugins\XPortalMapPicker\XPortalMapPicker.dll`. With a mod manager, `BepInEx` is inside your profile's folder.
 
 ## Settings
@@ -44,7 +55,7 @@ All the settings can be changed in game with a configuration manager (shudnal's 
 
 | Section | Setting | Default | What it does |
 |---|---|---|---|
-| General | Enabled | on | Turns the mod on or off. Off takes the Map button away, at once if a portal's panel is open, and ends any picking; XPortal then works exactly as it does without this mod. |
+| General | Enabled | on | Turns the mod on or off. Off takes the Map button away, at once if a portal's panel is open, ends any picking and takes the portal pins off the map; XPortal then works exactly as it does without this mod. |
 | General | Button label | `Map` | The text on the button. The button grows to fit it, but never gets wider than XPortal's Ping button, so keep it short. |
 | Map | Clean map while picking | on | Hides every other pin on the big map while you pick (your own pins, other mods' pins, pings, and other players unless the next setting is on), so only the portals show. The pins come back the moment you stop picking. |
 | Map | Show players while picking | on | On the clean map, keeps showing where the other players are right now: their live icons, with their names when the map is zoomed in far enough for the game to show pin names. Every other pin stays hidden. |
@@ -52,11 +63,16 @@ All the settings can be changed in game with a configuration manager (shudnal's 
 | Map | Portal names | Always | When the names show below the markers: always, or only under the mouse. |
 | Map | Marker size (%) | 100 | How big the markers are, in percent of the game's own map pins (50 to 300). |
 | Map | Zoom to fit portals | on | Centres the map on the portals and zooms out just far enough to show them all. Off opens the map the usual way, centred on you. Your own zoom is put back when picking ends. |
+| Portal pins | Portals on the large map | on | Shows every portal in XPortal's list as a pin on the big map, kept up to date as portals are built, renamed or destroyed. Never saved or shared. |
+| Portal pins | Portals on the minimap | on | The same on the minimap in the corner of the screen. |
+| Portal pins | Portal names on the large map | on | Shows each portal's name below its pin on the big map, when you zoom in far enough for the game to show pin names. The minimap never shows pin names. |
+| Portal pins | Portal names on mouse-over | on | On the big map, a portal pin's name shows while the pointer is over it, at any zoom. |
 
 ## Compatibility
 
 - **XPortal.** Made for XPortal 1.2.25. This mod works with parts of XPortal's panel that aren't meant for other mods, so a future XPortal may change them. If it does, this mod switches itself off when the game starts and writes a warning to `BepInEx\LogOutput.log`, and XPortal keeps working as usual.
 - **Cartur's Map Pins.** Works alongside it. Its pins are ordinary map pins, so they are hidden while you pick (unless "Clean map while picking" is off) and come back afterwards. Its display settings don't apply to the portal markers, which aren't pins. With "Clean map while picking" off and its icon picker switched on, a Shift+click on the map can still open its pin editor on one of your own pins.
+- **Map View Rules** (in miikeskii's QoL Pack) knows the portal pins by their picture and treats them as portal pins.
 - **MyLittleUI and Resizable Minimap.** No overlap expected: they change other parts of the map.
 - Other mods that change what clicks on the big map do may get in the way while you are picking.
 

@@ -16,10 +16,33 @@ namespace QoLMods
     // Other authors' mods that a module works with: soft, so a missing one switches off only that module, and listed
     // so they start before the bundle, where the module can find them.
     [BepInDependency(XPortalMapPicker.XPortalHooks.Guid, BepInDependency.DependencyFlags.SoftDependency)]   // XPortal Map Picker
+    [BepInDependency(MapViewRules.Cartur.Guid, BepInDependency.DependencyFlags.SoftDependency)]             // Map View Rules: Cartur's Map Pins
+    // Craft from Chests: other mods that take from chests for crafting, so they have started when it looks, and it stays off
+    [BepInDependency(CraftFromChests.Module.AzuCraftyBoxes, BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency(CraftFromChests.Module.CraftFromContainers, BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency(ReserveStock.Hex.Guid, BepInDependency.DependencyFlags.SoftDependency)]                // Reserve Stock and StoreStash: HexQuickStackStorage (StoreStash stays off while it runs)
+    // Portion Control: the mods that add buttons to the same split window (it stands aside for them) and CurrencyPocket
+    [BepInDependency(PortionControl.Module.BetterSplitDialog, BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency(PortionControl.Module.Abacus, BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency(PortionControl.Module.CurrencyPocket, BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency(Terraformer.Module.AdvancedTerrainModifiers, BepInDependency.DependencyFlags.SoftDependency)]  // Terraformer: AdvancedTerrainModifiers (it stays off while it runs)
+    // Bar None: JereKuusela's two mods it replaces (while one runs, the matching part stands aside)
+    [BepInDependency(BarNone.Rivals.SmokeCollision, BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency(BarNone.Rivals.ProjectileCollision, BepInDependency.DependencyFlags.SoftDependency)]
+    // Outfitter: EquipmentAndQuickSlots (its slots, by its interface), and the mods with inventory rows or slots of their own
+    // (it stays off beside them)
+    [BepInDependency(Outfitter.Eaqs.Guid, BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency(Outfitter.Module.AzuExtendedPlayerInventory, BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency(Outfitter.Module.ExtraSlots, BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency(Outfitter.Module.ExtendedPlayerInventory, BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency(Outfitter.Module.ComfyQuickSlots, BepInDependency.DependencyFlags.SoftDependency)]
+    // Topper-Upper: the mods that also feed fires and stations from chests (while one runs, it feeds nothing)
+    [BepInDependency(TopperUpper.Rivals.AutomaticFuel, BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency(TopperUpper.Rivals.LazyVikings, BepInDependency.DependencyFlags.SoftDependency)]
     [NetworkCompatibility(CompatibilityLevel.NotEnforced, VersionStrictness.None)]
     public sealed class Plugin : BaseUnityPlugin
     {
-        internal const string Version = "0.6.5";
+        internal const string Version = "0.45.1";
 
         private readonly List<ModuleHost> hosts = new List<ModuleHost>();
 
@@ -30,6 +53,26 @@ namespace QoLMods
             new MapZoom.Module(),
             new TraderCircles.Module(),
             new AddToCart.Module(),
+            new MapViewRules.Module(),
+            new CraftFromChests.Module(),
+            new ReserveStock.Module(),
+            new Handyman.Module(),
+            new PortionControl.Module(),
+            new ComfortBuild.Module(),
+            new StoreStash.Module(),
+            new Terraformer.Module(),
+            new ItemStandIcons.Module(),
+            new UseCase.Module(),
+            new BarNone.Module(),
+            new HouseTrained.Module(),
+            new Outfitter.Module(),
+            new Grounded.Module(),
+            new PowerWheel.Module(),
+            new SpareKeys.Module(),
+            new TopperUpper.Module(),
+            new MenUI.Module(),
+            new Hoarstone.Module(),
+            new AFKRaidBlocker.Module(),
         };
 
         /// <summary>The version of the module with this id if the bundle runs it, or null if the bundle doesn't hold it or

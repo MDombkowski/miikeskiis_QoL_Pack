@@ -3,9 +3,10 @@
   <!--
     Add to Cart: a BepInEx 5 plugin for Valheim, and a module of miikeskii's QoL Pack.
     Build: dotnet build -c Release   (output: bin\Release\net472\AddToCart.dll)
-    This project builds the single release from src\ (the module), kit\ (a copy of the QoL Mods kit), parts\Chests\
-    and parts\Catalogue\ (copies of the QoL Mods chest service and catalogue) and standalone\ (its own plugin). The
-    bundle, ..\QoLMods, compiles src\ from here too, and its own copies of the kit and the parts. See
+    This project builds the single release from src\ (the module), kit\ (a copy of the QoL Mods kit), parts\Chests\,
+    parts\Catalogue\ and parts\Pictures\ (copies of the QoL Mods chest service, catalogue and pictures) and
+    standalone\ (its own plugin). The bundle, ..\QoLMods, compiles src\ from here too, and its own copies of the kit
+    and the parts. See
     ..\QoLMods\MODULES.md.
 
     Every reference points at a DLL where it already lives and is never copied (Private=false).
@@ -19,7 +20,7 @@
     <TargetFramework>net472</TargetFramework>
     <AssemblyName>AddToCart</AssemblyName>
     <RootNamespace>AddToCart</RootNamespace>
-    <Version>0.3.3</Version>
+    <Version>0.5.0</Version>
     <!-- Keep the private repo's commit id out of the DLL's version text. -->
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <LangVersion>10.0</LangVersion>
@@ -87,6 +88,11 @@
     </Reference>
     <Reference Include="UnityEngine.TextRenderingModule">
       <HintPath>$(ValheimManaged)\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- TextMeshPro: the item stands part's text looks (the game's own number font) -->
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>$(ValheimManaged)\Unity.TextMeshPro.dll</HintPath>
       <Private>false</Private>
     </Reference>
 

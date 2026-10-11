@@ -15,18 +15,28 @@ namespace QoLMods.Chests
         private readonly Func<ManualLogSource> log;
         private readonly Action<string, Action> guard;
         private readonly Func<bool> isOn;
+        private readonly Func<bool> claimsFar;
+        private readonly Func<float> reach;
 
         /// <param name="name">The module's name, for log lines.</param>
         /// <param name="log">Its log. Asked for each time, since a module's host exists only once it runs.</param>
         /// <param name="guard">Its Module.Guard.</param>
         /// <param name="isOn">Its Module.IsOn: running and switched on. The service stops a fetch that is under way
         /// before taking anything once this turns false.</param>
-        internal ChestUser(string name, Func<ManualLogSource> log, Action<string, Action> guard, Func<bool> isOn)
+        /// <param name="claimsFar">Whether the service may claim, for this module, a chest beyond the server's hand-out
+        /// (ChestClaims, card A64); null (since card A69) for the shared setting "Chests beyond the server's reach"
+        /// (ChestSettings), which every module of the pack follows.</param>
+        /// <param name="reach">Its chest range in metres, read each time (ChestSettings.RangeOf): the largest among the
+        /// modules that are on is the range asked of Far Fetched on the server (ServerReach); null for none.</param>
+        internal ChestUser(string name, Func<ManualLogSource> log, Action<string, Action> guard, Func<bool> isOn, Func<bool> claimsFar = null,
+                           Func<float> reach = null)
         {
             Name = name;
             this.log = log;
             this.guard = guard;
             this.isOn = isOn;
+            this.claimsFar = claimsFar;
+            this.reach = reach;
         }
 
         internal string Name { get; }
@@ -34,6 +44,13 @@ namespace QoLMods.Chests
         internal ManualLogSource Log => log();
 
         internal bool IsOn => isOn();
+
+        /// <summary>Whether the service may claim, for this module, a chest beyond the server's hand-out that no game can
+        /// answer for (ChestClaims), read each time it's asked.</summary>
+        internal bool ClaimsFar => claimsFar != null ? claimsFar() : ChestSettings.ClaimsFar;
+
+        /// <summary>Its chest range in metres, read each time; 0 for none.</summary>
+        internal float Reach => reach != null ? reach() : 0f;
 
         internal void Guard(string task, Action work) => guard(task, work);
     }

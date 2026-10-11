@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using BepInEx.Logging;
 using QoLMods.Chests;
+using QoLMods.ItemStands;
 using QoLMods.Kit;
 
 namespace AddToCart
@@ -24,7 +25,7 @@ namespace AddToCart
 
         internal const string Name = "Add to Cart";
 
-        internal const string Version = "0.3.3";
+        internal const string Version = "0.5.0";
 
         private static Module current;
 
@@ -55,8 +56,10 @@ namespace AddToCart
         /// switches the mod off for the rest of the session instead.</summary>
         internal static void Guard(string task, Action work) => current.Host.Guard(task, work);
 
-        /// <summary>This module, as the chest service knows it.</summary>
-        internal static readonly ChestUser Chests = new ChestUser(Name, () => Log, Guard, () => IsOn);
+        /// <summary>This module, as the chest service knows it: "Chests beyond the server's reach" is the pack's shared
+        /// setting (card A69), and its range is what it asks of Far Fetched on the server (card A70).</summary>
+        internal static readonly ChestUser Chests = new ChestUser(Name, () => Log, Guard, () => IsOn,
+            reach: () => Settings.Range == null ? 0f : ChestSettings.RangeOf(Settings.Range));
 
         internal override string UpdateTask => "running the cart";
 
@@ -64,14 +67,20 @@ namespace AddToCart
 
         internal override void Resolve(List<string> missing, List<string> missingOptional)
         {
-            ChestHooks.Resolve(missing);
+            ChestHooks.Resolve(missing, Chests);
             Favorites.Resolve(missingOptional);
+            StandFit.Resolve(missingOptional);
+            StandFit.Warn ??= line => Log.LogWarning(line);   // in the bundle Item Stand Icons' log may have it already
         }
 
         internal override void Update()
         {
             ChestClaims.Tick();
             CartWindow.Update();
+            if (IsOn)
+            {
+                Browser.TickStandMarks();
+            }
         }
 
         internal override string LateUpdateTask => "placing the Locate labels";

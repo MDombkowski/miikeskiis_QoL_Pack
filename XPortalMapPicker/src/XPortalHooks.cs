@@ -44,7 +44,7 @@ namespace XPortalMapPicker
         private static PropertyInfo serverSettings;
         private static FieldInfo pingMapDisabled;
 
-        /// <summary>A portal the destination list offers.</summary>
+        /// <summary>A portal in XPortal's list.</summary>
         internal readonly struct Portal
         {
             internal readonly ZDOID Id;
@@ -136,13 +136,8 @@ namespace XPortalMapPicker
         internal static List<Portal> ChoosablePortals(object panel)
         {
             var known = new Dictionary<ZDOID, Portal>();
-            object manager = managerInstance.GetValue(null);
-            foreach (object item in (IEnumerable)listPortals.Invoke(manager, null))
+            foreach (Portal portal in KnownPortals())
             {
-                var portal = new Portal(
-                    (ZDOID)portalId.GetValue(item),
-                    (string)portalName.GetValue(item),
-                    (Vector3)portalLocation.GetValue(item));
                 known[portal.Id] = portal;
             }
 
@@ -156,6 +151,23 @@ namespace XPortalMapPicker
                 }
             }
             return choosable;
+        }
+
+        /// <summary>Every portal XPortal knows right now, as its list holds it. XPortal keeps that list current on every
+        /// computer: the server sends each portal that is built or renamed, and the whole list again after one is
+        /// destroyed. A portal nobody has named has an empty name here.</summary>
+        internal static List<Portal> KnownPortals()
+        {
+            var portals = new List<Portal>();
+            object manager = managerInstance.GetValue(null);
+            foreach (object item in (IEnumerable)listPortals.Invoke(manager, null))
+            {
+                portals.Add(new Portal(
+                    (ZDOID)portalId.GetValue(item),
+                    (string)portalName.GetValue(item),
+                    (Vector3)portalLocation.GetValue(item)));
+            }
+            return portals;
         }
 
         /// <summary>Selects the given portal's row in the destination list. Setting the list's value fires

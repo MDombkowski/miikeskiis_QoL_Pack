@@ -17,7 +17,7 @@
     <TargetFramework>net472</TargetFramework>
     <AssemblyName>XPortalMapPicker</AssemblyName>
     <RootNamespace>XPortalMapPicker</RootNamespace>
-    <Version>0.4.0</Version>
+    <Version>0.6.2</Version>
     <!-- Keep the private repo's commit id out of the DLL's version text. -->
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <LangVersion>10.0</LangVersion>
@@ -52,6 +52,11 @@
       <HintPath>$(ValheimManaged)\assembly_guiutils.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <!-- The platform layer: the type of Minimap.AddPin's optional author, which the portal pins leave at its default -->
+    <Reference Include="Splatform">
+      <HintPath>$(ValheimManaged)\Splatform.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
 
     <!-- Unity -->
     <Reference Include="UnityEngine">
@@ -64,6 +69,20 @@
     </Reference>
     <Reference Include="UnityEngine.UI">
       <HintPath>$(ValheimManaged)\UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- A portal's name under the pointer: the game's own pin name (TextMeshPro), found under the pointer (ZInput, in
+         assembly_utils; Canvas and RectTransformUtility, in UnityEngine.UIModule). -->
+    <Reference Include="assembly_utils">
+      <HintPath>$(ValheimManaged)\assembly_utils.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>$(ValheimManaged)\UnityEngine.UIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>$(ValheimManaged)\Unity.TextMeshPro.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.TextRenderingModule">

@@ -81,6 +81,12 @@ Check 'Minimap.IsExplored(Vector3) -> bool' ($m -ne $null -and $m.ReturnType -eq
 # The other players on the clean map (optional: without it they stay hidden while picking).
 $f = $mm.GetField('m_playerPins', $inst)
 Check 'Minimap.m_playerPins (List<Minimap.PinData>)' ($f -ne $null -and $f.FieldType.IsGenericType -and $f.FieldType.GetGenericTypeDefinition().FullName -eq 'System.Collections.Generic.List`1' -and $f.FieldType.GetGenericArguments()[0].FullName -eq 'Minimap+PinData') $(if ($f -ne $null) { $f.FieldType.ToString() })
+# A portal's name under the pointer (optional: without it, no name shows there).
+$f = $mm.GetField('m_pinNamePrefab', $inst)
+Check 'Minimap.m_pinNamePrefab (GameObject)' ($f -ne $null -and $f.FieldType.FullName -eq 'UnityEngine.GameObject') $(if ($f -ne $null) { $f.FieldType.ToString() })
+# The portal pins (optional: without it, a portal pin another mod takes off the map comes back only when its portal changes).
+$f = $mm.GetField('m_pins', $inst)
+Check 'Minimap.m_pins (List<Minimap.PinData>)' ($f -ne $null -and $f.FieldType.IsGenericType -and $f.FieldType.GetGenericTypeDefinition().FullName -eq 'System.Collections.Generic.List`1' -and $f.FieldType.GetGenericArguments()[0].FullName -eq 'Minimap+PinData') $(if ($f -ne $null) { $f.FieldType.ToString() })
 $m = $game.GetType('Game').GetMethod('Shutdown', $inst, $null, [type[]]@([bool]), $null); Check 'Game.Shutdown(bool)' ($m -ne $null) $m
 
 "failures: $fails"

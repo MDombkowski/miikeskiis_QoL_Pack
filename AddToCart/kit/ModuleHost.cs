@@ -140,9 +140,11 @@ namespace QoLMods.Kit
                 {
                     enabledText = $"{Module.DisplayName} {Module.ModuleVersion}. {enabledText}";
                 }
-                settings.BindEnabled(enabledText);
+                settings.BindEnabled(enabledText, Module.EnabledByDefault);
                 Module.BindSettings(settings);
+                settings.BindDefaultsMoved();
                 TakeSettingsOver(importFrom);
+                MoveDefaults();
                 Module.Resolve(missing, missingOptional);
             }
             catch (Exception error)
@@ -192,6 +194,18 @@ namespace QoLMods.Kit
         }
 
         private bool settingsTakenOver;
+
+        // A file written before a release that changed some defaults: each setting still at its old default moves to the
+        // new one, once (ModuleSettings.MovedDefault).
+        private void MoveDefaults()
+        {
+            List<string> moved = settings.MoveDefaults();
+            if (moved.Count > 0)
+            {
+                Log.LogInfo($"Moved {moved.Count} setting(s) to this version's defaults, since they still held the old ones: " +
+                            $"{string.Join(", ", moved)}. That happens once; a setting changed by hand was left as it was.");
+            }
+        }
 
         // In the bundle: a copy of this mod's single release that is older than SingleStandsAsideFrom doesn't know how to
         // stand aside, and it is running too. So the bundle's copy steps back instead, rather than change the game twice.

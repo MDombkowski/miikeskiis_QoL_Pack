@@ -29,6 +29,11 @@ namespace QoLMods.Kit
         /// <summary>What the Enabled switch does for this module, in plain words. The host binds the switch.</summary>
         internal abstract string EnabledDescription { get; }
 
+        /// <summary>Whether the Enabled switch is on in a new settings file. True for every module but one his own setup
+        /// keeps off (Item Stand Icons, since 2026-10-06, card A63); such a module also moves the switch's old default with
+        /// ModuleSettings.MovedDefault, so a file written before keeps up.</summary>
+        internal virtual bool EnabledByDefault => true;
+
         /// <summary>Ends every "switched off" warning, such as "XPortal itself works as usual."</summary>
         internal virtual string SwitchedOffNote => string.Empty;
 

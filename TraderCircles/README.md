@@ -9,7 +9,7 @@ Big, see-through coloured circles on the big map around every place a trader cou
 - **Five sizes, each with circles of its own.** 600, 900, 1200, 1500 or 2000 m across. Changing the size draws new circles, not the same ones grown or shrunk around the place, which would point at it. Overlapping the circles of different sizes does narrow the search: all five together, to about 330 m across; 1200 and 1500 alone, to about 870 m. That's why there are only five.
 - **Only ground the trader could stand on.** The part of a circle where that trader can't appear isn't drawn: too near the world's centre, too far out, or where its kind of ground can't exist at that distance. So a circle near those limits looks cut off along them. The circle itself is never moved to fit, so the place is equally likely anywhere in the part you see.
 - **Gone once found.** The game shows a trader's icon on everyone's map as soon as anyone comes within a few hundred metres of its camp; from that moment its circles are gone.
-- **Your choice of traders.** Each trader has its own switch, and all are off at first.
+- **Your choice of traders.** Each trader has its own switch, and all are on at first (since 0.1.1, miikeskii's own settings). An older settings file still at an old default moves to the new one once; a setting you changed stays as you set it.
 
 ## Good to know
 
@@ -37,9 +37,9 @@ Open the settings in game with a configuration manager (shudnal's ConfigurationM
 | Setting | Default | What it does |
 |---|---|---|
 | Enabled | on | Off hides every circle at once; on shows them again. |
-| Circles for Haldor | off | Circles around every place Haldor could still be. |
-| Circles for Hildir | off | The same for Hildir. |
-| Circles for the Bog Witch | off | The same for the Bog Witch. |
+| Circles for Haldor | on | Circles around every place Haldor could still be. |
+| Circles for Hildir | on | The same for Hildir. |
+| Circles for the Bog Witch | on | The same for the Bog Witch. |
 | Circle size (metres across) | 1200 | 600, 900, 1200, 1500 or 2000; each size has circles of its own. |
 | How solid the fill is (%) | 25 | 5 to 90; low is more see-through. |
 | Thin outline | off | A thin outline around each circle, in its own colour. |

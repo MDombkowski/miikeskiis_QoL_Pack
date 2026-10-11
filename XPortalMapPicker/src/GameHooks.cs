@@ -20,6 +20,8 @@ namespace XPortalMapPicker
         private static Func<Minimap, float, float, RawImage, Vector2> mapPointToLocalGuiPos;
         private static Func<Minimap, Vector3, bool> isExplored;
         private static FieldInfo playerPins;
+        private static FieldInfo pins;
+        private static FieldInfo pinNamePrefab;
 
         /// <summary>Minimap.OnMapLeftClick: a short left click on the big map (the game ticks the nearest pin).</summary>
         internal static MethodInfo MapLeftClick { get; private set; }
@@ -58,11 +60,32 @@ namespace XPortalMapPicker
                 playerPins = null;
                 missingOptional.Add("Minimap.m_playerPins (the other players then stay hidden on the clean map while picking)");
             }
+
+            pinNamePrefab = typeof(Minimap).GetField("m_pinNamePrefab", AnyInstance);
+            if (pinNamePrefab == null || pinNamePrefab.FieldType != typeof(GameObject))
+            {
+                pinNamePrefab = null;
+                missingOptional.Add("Minimap.m_pinNamePrefab (a portal pin's name then doesn't show under the pointer)");
+            }
+
+            pins = typeof(Minimap).GetField("m_pins", AnyInstance);
+            if (pins == null || pins.FieldType != typeof(List<Minimap.PinData>))
+            {
+                pins = null;
+                missingOptional.Add("Minimap.m_pins (a portal pin that another mod takes off the map then comes back only when its portal changes)");
+            }
         }
 
         /// <summary>Minimap.m_playerPins: the pins of the other players whose position is public, which the game moves
         /// every frame and draws as their live icons. Null if the game no longer has them. Optional.</summary>
         internal static List<Minimap.PinData> PlayerPins(Minimap map) => playerPins == null ? null : playerPins.GetValue(map) as List<Minimap.PinData>;
+
+        /// <summary>Minimap.m_pinNamePrefab: the game's pin name, for a portal's name under the pointer. Null if the game
+        /// no longer has it. Optional.</summary>
+        internal static GameObject PinNamePrefab(Minimap map) => pinNamePrefab == null ? null : pinNamePrefab.GetValue(map) as GameObject;
+
+        /// <summary>Minimap.m_pins: every pin on the map, the ones the game draws. Null if the game no longer has it. Optional.</summary>
+        internal static List<Minimap.PinData> Pins(Minimap map) => pins == null ? null : pins.GetValue(map) as List<Minimap.PinData>;
 
         /// <summary>Where a world position lies on the map texture, from 0 to 1 across the whole map.</summary>
         internal static void WorldToMapPoint(Minimap map, Vector3 point, out float mapX, out float mapY) => worldToMapPoint(map, point, out mapX, out mapY);

@@ -26,7 +26,7 @@ None. Every line of this mod was written for it.
 ## Assets
 
 - `icon.png` is drawn by this mod's own `tools\make-icon.ps1`.
-- The portal markers reuse the game's own portal map icon, taken from the running game; nothing is shipped.
+- The portal markers and the portal pins reuse the game's own portal map icon, and a portal's name under the pointer the game's own pin name, all taken from the running game; nothing is shipped.
 
 ## Written with AI
 

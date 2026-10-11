@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Jotunn.Managers;
+using QoLMods.Pictures;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
@@ -23,6 +24,8 @@ namespace AddToCart
         internal static readonly Color Good = new Color(0.6f, 0.9f, 0.5f, 1f);
         internal static readonly Color Plain = new Color(0.95f, 0.92f, 0.85f, 1f);
         internal static readonly Color Quiet = new Color(0.75f, 0.72f, 0.65f, 1f);
+        /// <summary>A piece's comfort, top left of its thumbnail: Comfort Build's number in the build menu is this colour
+        /// and corner by default too.</summary>
         internal static readonly Color Comfort = new Color(0.55f, 0.85f, 1f, 1f);
         internal static readonly Color Gold = new Color(1f, 0.85f, 0.3f, 1f);
 
@@ -303,6 +306,51 @@ namespace AddToCart
         internal static bool Ctrl() => ZInput.GetKey(KeyCode.LeftControl, false) || ZInput.GetKey(KeyCode.RightControl, false);
 
         internal static bool Alt() => ZInput.GetKey(KeyCode.LeftAlt, false) || ZInput.GetKey(KeyCode.RightAlt, false);
+
+        /// <summary>
+        /// The modifier keys that stop a shortcut when held and not part of it: Ctrl, Alt, and Windows or Command, each side.
+        /// Each group is one physical key as the game reads it (ZInput's key map: AltGr is Right Alt, Command is Windows), so
+        /// a shortcut naming either member works. Shift is not here: the game's Run is Left Shift held, and the cart's key
+        /// must work while he sprints (the lead's call, review of card A83), at the price that "Shift + K" bound by another
+        /// mod opens the cart too.
+        /// </summary>
+        internal static readonly KeyCode[][] BlockingKeys =
+        {
+            new[] { KeyCode.LeftControl },
+            new[] { KeyCode.RightControl },
+            new[] { KeyCode.LeftAlt },
+            new[] { KeyCode.RightAlt, KeyCode.AltGr },
+            new[] { KeyCode.LeftWindows, KeyCode.LeftCommand },
+            new[] { KeyCode.RightWindows, KeyCode.RightCommand },
+        };
+
+        /// <summary>The keys the game reads as the same physical key as this one (itself included).</summary>
+        internal static KeyCode[] SameKey(KeyCode key) => BlockingKeys.FirstOrDefault(group => group.Contains(key)) ?? new[] { key };
+
+        /// <summary>
+        /// Whether a shortcut's modifiers are held as it asks (<paramref name="held"/>: whether a key is down): every one it
+        /// lists (by its physical key), and no unlisted Ctrl, Alt or Windows key, so "K" doesn't fire under Left Alt + K or
+        /// Ctrl + K that another mod binds (the free-keys research, 2026-10-09), as BepInEx's own KeyboardShortcut.IsDown
+        /// refuses an extra key. Unlike that check, only those keys count as extra: a movement key, or Shift while running,
+        /// never stops it. The shortcut's own main key (<paramref name="mainKey"/>: a shortcut that is Right Ctrl alone) is
+        /// never extra.
+        /// </summary>
+        internal static bool OnlyItsModifiers(IEnumerable<KeyCode> modifiers, Func<KeyCode, bool> held, KeyCode mainKey = KeyCode.None)
+        {
+            var listed = new HashSet<KeyCode>(modifiers ?? Enumerable.Empty<KeyCode>());
+            if (!listed.All(key => SameKey(key).Any(held)))
+            {
+                return false;
+            }
+            foreach (KeyCode[] group in BlockingKeys)
+            {
+                if (!group.Any(key => listed.Contains(key) || key == mainKey) && group.Any(held))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
 
         /// <summary>A row for a list inside a Scroll: full width, fixed height, laid out by the content's VerticalLayoutGroup.</summary>
         internal static GameObject Row(Transform content, float height, Color? color = null)

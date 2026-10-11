@@ -24,13 +24,17 @@ namespace AddToCart
     /// </summary>
     internal static class Looks
     {
-        /// <summary>The opacity setting's range and default: 0.1, his call after 0.3.2 (it was 0.3, 0.3.0's fade). At most
-        /// 0.9, so Faded never looks the same as available.</summary>
+        /// <summary>The opacity setting's range and default: 0.075, his own setting made the default (card A63, 2026-10-06;
+        /// it was 0.1, his call after 0.3.2, and 0.3, 0.3.0's fade). At most 0.9, so Faded never looks the same as
+        /// available.</summary>
         internal const float LeastOpacity = 0.05f;
 
         internal const float MostOpacity = 0.9f;
 
-        internal const float DefaultOpacity = 0.1f;
+        internal const float DefaultOpacity = 0.075f;
+
+        /// <summary>The default before card A63, which a settings file still holding it moves from once.</summary>
+        internal const float OldDefaultOpacity = 0.1f;
 
         /// <summary>
         /// How much bigger than the game's GUI scale the window is drawn: the setting's size, or as much of it as fits

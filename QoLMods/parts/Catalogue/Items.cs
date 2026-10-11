@@ -1,6 +1,7 @@
 // The QoL Mods catalogue, a part: the one copy to edit is Games\Valheim\QoLMods\parts\Catalogue\. Every mod that uses
 // it carries a copy in its own parts\Catalogue\ folder, kept identical by QoLMods\tools\sync-kit.ps1, so each mod still
 // builds and publishes on its own. The rules for a part are in QoLMods\MODULES.md.
+using System;
 using System.Collections.Generic;
 
 namespace QoLMods.Catalogue
@@ -71,7 +72,12 @@ namespace QoLMods.Catalogue
         /// <summary>Its place in its hand-placed list (Taxonomy.Explicit), for the order within a heading; 999 if none.</summary>
         internal readonly int ExplicitOrder;
 
-        internal ItemHome(string family, string section, string sub, string slot, string preparation, string kind, string kindSub, int explicitOrder)
+        /// <summary>The quick picks of its family it belongs to (Taxonomy.QuickPicks: "Metal Ingots", "Stamina Foods"), by
+        /// label; none for most things (card A81).</summary>
+        internal readonly IReadOnlyList<string> Groups;
+
+        internal ItemHome(string family, string section, string sub, string slot, string preparation, string kind, string kindSub, int explicitOrder,
+                          IReadOnlyList<string> groups = null)
         {
             Family = family ?? "Other";
             Section = section ?? string.Empty;
@@ -81,10 +87,56 @@ namespace QoLMods.Catalogue
             Kind = kind ?? "Other";
             KindSub = kindSub ?? string.Empty;
             ExplicitOrder = explicitOrder;
+            Groups = groups ?? NoGroups;
+        }
+
+        private static readonly string[] NoGroups = new string[0];
+
+        /// <summary>Whether it belongs to its family's quick pick <paramref name="label"/>.</summary>
+        internal bool InGroup(string label)
+        {
+            foreach (string group in Groups)
+            {
+                if (group == label)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>For a name no item has: Other, Odds and Ends.</summary>
         internal static readonly ItemHome Unknown = new ItemHome("Other", "Odds and Ends", string.Empty, string.Empty, string.Empty, "Other", "Other", 999);
+    }
+
+    /// <summary>
+    /// A quick pick (card A81): a natural group of one family's things a setup takes in one click and names as such
+    /// ("Metal Ingots", "Stamina Foods"), as data in Taxonomy.QuickPicks: its family, its member ("" when it spans the
+    /// family's members), its label, a line saying what it is, and its rule on an item's facts and food preparation.
+    /// </summary>
+    internal sealed class QuickPick
+    {
+        internal readonly string Family;
+
+        /// <summary>The member it lies inside ("Ready to Eat"), or "" for a group across members ("Metal Ingots").</summary>
+        internal readonly string Member;
+
+        internal readonly string Label;
+
+        /// <summary>What it is, after its label, for the setup window's bottom line ("the smelted bars (Copper, Tin...)").</summary>
+        internal readonly string About;
+
+        /// <summary>Whether an item of its family (and member) belongs to it, by the item's facts and food preparation.</summary>
+        internal readonly Func<ItemFacts, string, bool> Rule;
+
+        internal QuickPick(string family, string member, string label, string about, Func<ItemFacts, string, bool> rule)
+        {
+            Family = family;
+            Member = member ?? string.Empty;
+            Label = label;
+            About = about ?? string.Empty;
+            Rule = rule;
+        }
     }
 
     /// <summary>
@@ -107,7 +159,48 @@ namespace QoLMods.Catalogue
             string preparation = Preparation(it, family, section);
             (string kind, string kindSub) = CraftKind(family, section, sub);
             int order = Taxonomy.ExplicitOrder.TryGetValue(it.Prefab ?? string.Empty, out int at) ? at : 999;
-            return new ItemHome(family, section, sub, slot, preparation, kind, kindSub, order);
+            return new ItemHome(family, section, sub, slot, preparation, kind, kindSub, order, GroupsOf(it, family, section, preparation));
+        }
+
+        // The quick picks of its family (inside its member, for one that lies inside a member) whose rule takes it.
+        private static List<string> GroupsOf(ItemFacts it, string family, string section, string preparation)
+        {
+            List<string> groups = null;
+            foreach (QuickPick quick in Taxonomy.QuickPicks)
+            {
+                if (quick.Family == family && (quick.Member.Length == 0 || quick.Member == section) && quick.Rule(it, preparation))
+                {
+                    (groups ?? (groups = new List<string>())).Add(quick.Label);
+                }
+            }
+            return groups;
+        }
+
+        /// <summary>
+        /// A food's main stat as the game itself marks it, by the colour of the food mark on its inventory cell
+        /// (InventoryGrid.UpdateGui, Valheim 1.0.17): only a Consumable with a food stat; "Eitr" (blue) when both health and
+        /// stamina are under half its eitr, else "Health" (red) when stamina is under half its health, else "Stamina"
+        /// (yellow) when health is under half its stamina, else "Balanced" (white). Null for anything else.
+        /// </summary>
+        internal static string FoodStat(ItemFacts it)
+        {
+            if (it == null || it.Type != "Consumable" || (it.Health <= 0f && it.Stamina <= 0f && it.Eitr <= 0f))
+            {
+                return null;
+            }
+            if (it.Health < it.Eitr / 2f && it.Stamina < it.Eitr / 2f)
+            {
+                return "Eitr";
+            }
+            if (it.Stamina < it.Health / 2f)
+            {
+                return "Health";
+            }
+            if (it.Health < it.Stamina / 2f)
+            {
+                return "Stamina";
+            }
+            return "Balanced";
         }
 
         private static (string, string) Classify(ItemFacts it)

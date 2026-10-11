@@ -84,6 +84,11 @@ foreach ($doc in @('README.md', 'CHANGELOG.md')) {
     if ($text.Length -gt 100000) { throw "$doc is longer than Thunderstore's 100,000 characters." }
 }
 
+# Nothing that ships says how a mod was tested, or that it wasn't: his rule (card B07, 2026-10-10). The bundle's text
+# and every module's, whose single releases are packed below from the same folders.
+$shippedFolders = @($bundleFolder) + @($modules | ForEach-Object { Join-Path $valheimFolder $_.Folder })
+& (Join-Path $PSScriptRoot 'check-shipped-text.ps1') @shippedFolders
+
 # Thunderstore asks an AI-made mod to say so in its README and in its project's AssemblyMetadata (its wiki page "LLMs
 # and AI-generated files", read 2026-09-27; his order: the package follows the policies). Refuse to pack without both.
 $readmePath = Join-Path $bundleFolder 'README.md'
@@ -94,9 +99,16 @@ if ($projectText -notmatch 'AssemblyMetadata\s+Include="AI_Assisted_Creation"') 
 
 # What a mod manager lists under the title: the pack's own name (the title can't hold its apostrophe), then his own
 # words from the README's opening (2026-09-27), then the mods inside, by name only, so there is room for more; their
-# versions are in the README and the changelog.
-$names = ($modules | ForEach-Object { $_.Name }) -join ', '
-$description = "miikeskii's QoL Pack. Made with AI. A collection of Valheim quality-of-life mods, client-side, with an on/off switch for each. Inside: $names."
+# versions are in the changelog (and the log line at start). Once every name no longer fits in Thunderstore's 250 characters (with
+# the eighth module, Handyman, 2026-09-30), as many as fit, in the bundle's order, then how many more.
+$names = @($modules | ForEach-Object { $_.Name })
+$opening = "miikeskii's QoL Pack. Made with AI. A collection of Valheim quality-of-life mods, client-side, with an on/off switch for each. Inside: "
+for ($shown = $names.Count; $shown -ge 1; $shown--) {
+    $list = $names[0..($shown - 1)] -join ', '
+    if ($shown -lt $names.Count) { $list += ", and $($names.Count - $shown) more" }
+    $description = "$opening$list."
+    if ($description.Length -le 250) { break }
+}
 if ($description.Length -gt 250) { throw "The description is $($description.Length) characters long; Thunderstore allows 250. Shorten its wording." }
 
 $buildArguments = @('build', (Join-Path $bundleFolder 'QoLMods.csproj'), '-c', 'Release', '-nologo')
@@ -104,6 +116,11 @@ if ($ValheimManaged) { $buildArguments += "-p:ValheimManaged=$ValheimManaged" }
 if ($ModProfile) { $buildArguments += "-p:ModProfile=$ModProfile" }
 & dotnet @buildArguments
 if ($LASTEXITCODE -ne 0) { throw 'The build failed, so nothing was packed.' }
+
+# The DLL's own strings ship too (every setting's description, every message: 0.45.0's said "untested" in two of
+# Topper-Upper's settings, card B10), and its debug path must not name this computer's user. Checked before anything is
+# packed; the single releases below are built from the same sources in the same folder.
+& (Join-Path $PSScriptRoot 'check-shipped-text.ps1') (Join-Path $bundleFolder 'bin\Release\net472\QoLMods.dll')
 
 $icon = Join-Path $bundleFolder 'icon.png'
 if (-not (Test-Path $icon)) { & (Join-Path $PSScriptRoot 'make-icon.ps1') -OutFile $icon }
@@ -169,13 +186,17 @@ if ($SourceTo) {
 The source of **miikeskii's QoL Pack**, Valheim quality-of-life mods for BepInEx 5 and Jotunn, installed from Thunderstore as [miikeskiis QoL Pack](https://thunderstore.io/c/valheim/p/miikeskii/miikeskiis_QoL_Pack/). This is the source of its version VERSION; to play it, install it from Thunderstore.
 
 - `QoLMods/`: the bundle (its plugin, the kit that runs each mod as a module, and the parts several mods share). `QoLMods/README.md` describes the pack, and `QoLMods/MODULES.md` says how to build it ("Building and packing the bundle").
-- `AddToCart/`, `MapZoom/`, `TraderCircles/` and `XPortalMapPicker/`: each mod's own code, compiled into the bundle from there.
+- MODULEFOLDERS: each mod's own code, compiled into the bundle from there.
 
 **Made with AI.** The code was written by Claude, Anthropic's AI (the Claude Opus 5 and Opus 5.5 models, working as Claude Code agents), for miikeskii.
 
 **Licence:** GPL-3.0, in `LICENSE`.
 '@
-    [System.IO.File]::WriteAllText((Join-Path $SourceTo 'README.md'), ($sourceReadme -replace 'VERSION', $version), (New-Object System.Text.UTF8Encoding($false)))
+    # The mod folders, from the project's Compile lines, as "`A/`, `B/` and `C/`": a list typed by hand went stale.
+    $folderNames = @($modules | ForEach-Object { '`' + $_.Folder + '/`' } | Sort-Object)
+    $folderList = if ($folderNames.Count -gt 1) { ($folderNames[0..($folderNames.Count - 2)] -join ', ') + ' and ' + $folderNames[-1] } else { $folderNames[0] }
+    $readmeText = $sourceReadme.Replace('VERSION', $version).Replace('MODULEFOLDERS', $folderList)
+    [System.IO.File]::WriteAllText((Join-Path $SourceTo 'README.md'), $readmeText, (New-Object System.Text.UTF8Encoding($false)))
     "Mirrored the source of $version into $SourceTo ($($copies.Count) files, with LICENSE and README.md)"
 }
 

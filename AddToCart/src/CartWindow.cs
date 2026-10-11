@@ -6,6 +6,7 @@ using BepInEx.Configuration;
 using Jotunn.Managers;
 using QoLMods.Catalogue;
 using QoLMods.Chests;
+using QoLMods.Pictures;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -67,10 +68,23 @@ namespace AddToCart
         private static GameObject popup;
         private static Text popupText;
         private static Action popupYes;
+        private static GameObject trueSwitch;
+        private static Toggle trueBox;
+        private static Text trueLabel;
+        private static GameObject lastPopup;
+        private static Text lastPopupText;
+        private static Action lastAnyway;
+        private static Action lastAllButOne;
 
         internal static bool IsOpen => window != null && window.activeSelf;
 
-        private static Dictionary<string, int> Available => survey.Stock;
+        /// <summary>True while one of the window's questions shows (the browser's F leaves the filter alone then).</summary>
+        internal static bool PopupOpen => (popup != null && popup.activeSelf) || (lastPopup != null && lastPopup.activeSelf);
+
+        /// <summary>What the chests may give, by key, as the window counts it: as leave-one allows (one kept back in each
+        /// chest), or with "True counts" the whole count (card A83). The cart's maths, the thumbnails, the hover lines and the
+        /// sorts all count from this, so they always agree; a fetch then asks before it takes a last one (Fetch).</summary>
+        private static Dictionary<string, int> Available => Settings.TrueCounts.Value ? survey.Whole : survey.Stock;
 
         /// <summary>Every frame, from Module.Update, also while the mod is switched off (then it only closes the window).</summary>
         internal static void Update()
@@ -104,6 +118,10 @@ namespace AddToCart
                     {
                         ListsPopup.Close();
                     }
+                    else if (lastPopup != null && lastPopup.activeSelf)
+                    {
+                        CancelLastOnes();   // Escape answers Cancel
+                    }
                     else if (popup != null && popup.activeSelf)
                     {
                         popup.SetActive(false);
@@ -130,7 +148,7 @@ namespace AddToCart
                 {
                     Ui.Wheel(Settings.ScrollRows.Value, Browser.CellSize + Browser.CellGap, ListsPopup.Checklist);
                 }
-                else if (!Browser.ListOpen && (popup == null || !popup.activeSelf))
+                else if (!Browser.ListOpen && !PopupOpen)
                 {
                     Ui.Wheel(Settings.ScrollRows.Value, Browser.CellSize + Browser.CellGap, Browser.Grid, Browser.Rail, cartList, materialsList);
                 }
@@ -171,13 +189,24 @@ namespace AddToCart
             {
                 window.SetActive(false);
             }
+            HidePopups();
+            ListsPopup.Close();
+            picking = false;
+            Unblock();
+        }
+
+        // The pop-ups are the window's children: hidden with it, they would show again when it opens, with a question about
+        // a cart and chests as they were (a stale question about the last ones would fetch what was seen then).
+        private static void HidePopups()
+        {
             if (popup != null)
             {
                 popup.SetActive(false);
             }
-            ListsPopup.Close();
-            picking = false;
-            Unblock();
+            if (lastPopup != null)
+            {
+                lastPopup.SetActive(false);
+            }
         }
 
         // Closing on Escape or the key: the game's input comes back a frame later, so the same key press can't also open
@@ -188,6 +217,7 @@ namespace AddToCart
             {
                 window.SetActive(false);
             }
+            HidePopups();
             ListsPopup.Close();
             picking = false;
             unblockNextFrame = true;
@@ -209,7 +239,7 @@ namespace AddToCart
             {
                 return false;
             }
-            return key.Modifiers.All(modifier => ZInput.GetKey(modifier, false));
+            return Ui.OnlyItsModifiers(key.Modifiers, code => ZInput.GetKey(code, false), key.MainKey);   // strict: no extra Ctrl, Alt or Windows key held
         }
 
         // As the game decides whether the player takes input (Player.TakeInput): no other window, menu, map or text box.
@@ -305,8 +335,9 @@ namespace AddToCart
 
         internal static int CountOf(Entry entry) => Cart.FirstOrDefault(line => line.Entry.Key == entry.Key)?.Count ?? 0;
 
-        /// <summary>What the chests in range may give of an item (after leaving one, where that is on).</summary>
-        internal static int StockOf(string key) => survey.StockOf(key);
+        /// <summary>What the chests in range may give of an item, as the window counts (Available: after leaving one, where
+        /// that is on, unless "True counts").</summary>
+        internal static int StockOf(string key) => Get(Available, key);
 
         private static string loggedNotOnTake;
 
@@ -324,7 +355,11 @@ namespace AddToCart
             }
             string[] words = query.ToLowerInvariant().Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
             ChestRules rules = Settings.Rules();
-            List<LeftOutItem> found = ChestStock.Explain(player.transform.position, rules, item =>
+            bool whole = Settings.TrueCounts.Value;
+            // With "True counts" the Take tab lists the last ones too: no item is left out for being one.
+            ChestRules explaining = Settings.Rules();
+            explaining.LeaveOne &= !whole;
+            List<LeftOutItem> found = ChestStock.Explain(player.transform.position, explaining, item =>
             {
                 string name = Localization.instance.Localize(item.m_shared.m_name).ToLowerInvariant();
                 return words.All(word => name.Contains(word));
@@ -332,7 +367,7 @@ namespace AddToCart
             // The Take tab is up to a second old, the chests are read now: something that has just reached a chest isn't
             // a fault. Counted afresh (without touching the tab) before saying so (review 1).
             if (found.Any(each => each.Why == null) &&
-                Catalogue.Take(ChestStock.Survey(player.transform.position, rules)).Any(entry => entry.Listing != null && Browse.Matches(entry.Listing, query)))
+                Catalogue.Take(ChestStock.Survey(player.transform.position, rules), whole).Any(entry => entry.Listing != null && Browse.Matches(entry.Listing, query)))
             {
                 return "It has just reached a chest: it shows at the next count, within a second.";
             }
@@ -374,7 +409,7 @@ namespace AddToCart
             Dictionary<string, Need> needs = CartMath.NeedsByItem(CartPairs());
             bool onlyShort = Settings.OnlyWhatImShort.Value;
             Dictionary<string, int> settled = CartMath.Settled(needs, carrying, Available, onlyShort);
-            return entry => entry.Literal ? survey.StockOf(entry.Costs[0].Item) : CartMath.MostMoreSettled(entry, needs, carrying, settled, onlyShort);
+            return entry => entry.Literal ? StockOf(entry.Costs[0].Item) : CartMath.MostMoreSettled(entry, needs, carrying, settled, onlyShort);
         }
 
         internal static void Status(string text)
@@ -410,7 +445,7 @@ namespace AddToCart
                     Add(carrying, key, item.m_stack);
                 }
             }
-            List<Entry> fresh = Catalogue.Take(survey);
+            List<Entry> fresh = Catalogue.Take(survey, Settings.TrueCounts.Value);
             string keys = string.Join("\n", fresh.Select(entry => entry.Key).OrderBy(key => key, StringComparer.Ordinal));
             if (keys != takeKeys)
             {
@@ -436,8 +471,11 @@ namespace AddToCart
             Survey();
             ChestRules rules = Settings.Rules();
             string reserved = survey.ReservedChests > 0 ? $" {survey.ReservedChests} reserved {(survey.ReservedChests == 1 ? "chest is" : "chests are")} left alone." : string.Empty;
-            chestsText.text = $"Counting {survey.Chests} {(survey.Chests == 1 ? "chest" : "chests")} within {rules.Range:0} m" +
-                              (rules.LeaveOne ? ", leaving one of each stackable item in each." : ".") + reserved;
+            string leaving = !rules.LeaveOne ? "."
+                : Settings.TrueCounts.Value ? ", the last one in each chest included (True counts)."
+                : rules.LeaveOneOfGear ? ", leaving one of each item in each."
+                : ", leaving one of each stackable item in each.";
+            chestsText.text = $"Counting {survey.Chests} {(survey.Chests == 1 ? "chest" : "chests")} within {rules.Range:0} m" + leaving + reserved;
             Browser.RefreshCells();
             ShowMaterials();
             ShowLocate();
@@ -485,15 +523,19 @@ namespace AddToCart
             }
             if (entry.Comfort > 0)
             {
-                string kind = entry.ComfortGroup == Piece.ComfortGroup.None ? "on its own" : $"in the {entry.ComfortGroup.ToString().ToLowerInvariant()} group";
-                text.Append($" · <color=#{ColorUtility.ToHtmlStringRGB(Ui.Comfort)}>comfort {entry.Comfort}</color>, {kind}");
+                // As Comfort Build's line in the build menu begins: "Comfort 2 (Chairs)", in the catalogue's words.
+                text.Append($" · <color=#{ColorUtility.ToHtmlStringRGB(Ui.Comfort)}>Comfort {entry.Comfort}</color> " +
+                            $"({Taxonomy.ComfortKind(entry.ComfortGroup.ToString())})");
             }
             text.Append('\n');
             if (entry.Literal)
             {
                 string key = entry.Costs[0].Item;
                 int reserved = survey.ReservedOf(key);
-                text.Append($"In the chests: {survey.StockOf(key)}" + (reserved > 0 ? $" (and {reserved} in reserved chests)" : string.Empty) +
+                int inChests = StockOf(key);
+                // With "True counts", how many can go without a chest's last one.
+                string kept = Settings.TrueCounts.Value && survey.StockOf(key) < inChests ? $", {survey.StockOf(key)} leaving one in each chest" : string.Empty;
+                text.Append($"In the chests: {inChests}{kept}" + (reserved > 0 ? $" (and {reserved} in reserved chests)" : string.Empty) +
                             $". You carry {Get(carrying, key)}. Alt+click, or Locate, to find the chests.");
             }
             else
@@ -503,7 +545,7 @@ namespace AddToCart
                 text.Append(string.Join(", ", entry.Costs.Select(cost =>
                 {
                     string amount = red.Contains(cost.Item) ? $"<color=#{bad}>{cost.Amount}</color>" : cost.Amount.ToString();
-                    return $"{amount}/{survey.StockOf(cost.Item)} {ItemName(cost.Item)}";
+                    return $"{amount}/{StockOf(cost.Item)} {ItemName(cost.Item)}";
                 })));
             }
             hoverText.text = text.ToString();
@@ -651,6 +693,47 @@ namespace AddToCart
             }
             locateButton.gameObject.SetActive(Browser.Current == Tab.Take || Locator.Active);
             locateButton.GetComponentInChildren<Text>().text = Locator.Active ? "Stop locating" : picking ? "Pick an item…" : "Locate";
+            ShowTrueSwitch();
+        }
+
+        // ---- True counts (card A83) ----
+
+        // The switch on the Take tab, beside Locate (setting "True counts switch on the Take tab"): its tick follows the
+        // setting, which F1 may change too; with leave-one off it can't be switched (every count is whole already).
+        private static void ShowTrueSwitch()
+        {
+            if (trueSwitch == null)
+            {
+                return;
+            }
+            trueSwitch.SetActive(Browser.Current == Tab.Take && Settings.TrueCountsSwitch.Value);
+            bool leavesOne = Settings.Rules().LeaveOne;
+            trueBox.SetIsOnWithoutNotify(Settings.TrueCounts.Value);
+            trueBox.interactable = leavesOne;
+            trueLabel.color = leavesOne ? Ui.Plain : Ui.Faint;
+        }
+
+        private static void TrueCountsSwitched(bool on)
+        {
+            if (!Settings.Rules().LeaveOne)
+            {
+                ShowTrueSwitch();
+                return;
+            }
+            Settings.TrueCounts.Value = on;
+            statusText.text = on
+                ? "True counts: every count includes the last one in each chest. A fetch asks before it takes one."
+                : "Every count leaves out the one kept back in each chest.";
+            CountAndShow();
+        }
+
+        private static void ShowTrueHint()
+        {
+            hoverIcon.enabled = false;
+            hoverText.text = Settings.Rules().LeaveOne
+                ? "<b>True counts</b>: every count includes the one \"Leave one of each item in chests\" keeps back in each chest. " +
+                  "A fetch that would take a chest's last one asks first."
+                : "<b>True counts</b>: \"Leave one of each item in chests\" is off, so every count is the whole count already.";
         }
 
         private static void LocateClicked()
@@ -795,16 +878,42 @@ namespace AddToCart
             }
             bool coveredAtStart = lines.All(line => line.Short == 0);
             List<string> fetchedKeys = Cart.Select(line => line.Entry.Key).ToList();
-            if (ChestFetch.Start(Module.Chests, order, Settings.Rules(), result => Fetched(result, coveredAtStart, fetchedKeys)))
+            ChestRules rules = Settings.Rules();
+            if (Settings.TrueCounts.Value && rules.LeaveOne)
             {
-                statusText.text = "Fetching…";
-                fetchButton.interactable = false;
+                // The counts were whole: whatever leave-one wouldn't allow is a chest's last one, and he is asked first
+                // (card A83). The question carries the orders as seen now; its answers fetch exactly those.
+                List<MaterialLine> keptLines = CartMath.Materials(CartPairs(), carrying, survey.Stock, Settings.OnlyWhatImShort.Value);
+                Dictionary<string, int> kept = CartMath.Order(keptLines);
+                List<LastOne> lastOnes = CartMath.LastOnes(order, kept);
+                if (lastOnes.Count > 0)
+                {
+                    AskLastOnes(order, kept, lastOnes, rules, coveredAtStart, keptLines.All(line => line.Short == 0), fetchedKeys);
+                    return;
+                }
+            }
+            StartFetch(order, rules, coveredAtStart, fetchedKeys);
+        }
+
+        // A fetch of the order under these rules. "Fetching…" goes up first: the result may come back before Start does.
+        private static void StartFetch(Dictionary<string, int> order, ChestRules rules, bool coveredAtStart, List<string> fetchedKeys)
+        {
+            statusText.text = "Fetching…";
+            fetchButton.interactable = false;
+            if (!ChestFetch.Start(Module.Chests, order, rules, result => Fetched(result, coveredAtStart, fetchedKeys, rules, false)))
+            {
+                statusText.text = "A fetch is under way: try again in a moment.";
+                fetchButton.interactable = true;
             }
         }
 
-        private static void Fetched(FetchResult result, bool coveredAtStart, List<string> fetchedKeys)
+        private static void Fetched(FetchResult result, bool coveredAtStart, List<string> fetchedKeys, ChestRules rules, bool lastOnesLeft)
         {
-            string message = Describe(result);
+            string message = Describe(result, rules);
+            if (lastOnesLeft)
+            {
+                message += " The last ones weren't taken: another fetch was under way. Fetch again for them.";
+            }
             Module.Log.LogInfo(message);
             Player.m_localPlayer?.Message(MessageHud.MessageType.TopLeft, message);
             bool fetchedAny = result.Moved.Values.Any(amount => amount > 0);
@@ -829,13 +938,18 @@ namespace AddToCart
             }
         }
 
-        private static string Describe(FetchResult result)
+        private static string Describe(FetchResult result, ChestRules rules)
         {
             var text = new StringBuilder();
             var moved = result.Moved.Where(each => each.Value > 0).Select(each => $"{each.Value} {ItemName(each.Key)}").ToList();
             text.Append(moved.Count > 0
-                ? $"Fetched {string.Join(", ", moved)} from {result.ChestsUsed} {(result.ChestsUsed == 1 ? "chest" : "chests")}."
+                ? $"Fetched {string.Join(", ", moved)} from {result.ChestsUsed} {(result.ChestsUsed == 1 ? "chest" : "chests")}" +
+                  (result.ChestsShared > 0 ? $" ({result.ChestsShared} of them open by a friend)." : ".")
                 : "Fetched nothing.");
+            if (result.Dropped > 0)
+            {
+                text.Append($" {result.Dropped} didn't fit in your inventory and lie at your feet.");
+            }
             var missing = result.Wanted.Keys.Where(item => result.ShortOf(item) > 0).Select(item => $"{result.ShortOf(item)} {ItemName(item)}").ToList();
             if (missing.Count > 0)
             {
@@ -849,9 +963,29 @@ namespace AddToCart
             {
                 text.Append($" Skipped {result.ChestsReserved} {(result.ChestsReserved == 1 ? "chest" : "chests")} reserved meanwhile.");
             }
-            if (result.ChestsNoAnswer > 0)
+            if (missing.Count > 0 && Player.m_localPlayer != null)
             {
-                text.Append($" {result.ChestsNoAnswer} {(result.ChestsNoAnswer == 1 ? "chest's owner" : "chests' owners")} didn't answer in time.");
+                // Which item, how far its chest is and why it couldn't be had (card A69), said and logged.
+                var left = result.Wanted.Keys.Where(item => result.ShortOf(item) > 0).ToDictionary(item => item, item => result.ShortOf(item));
+                List<ShortItem> items = ChestExplain.Shortfall(Module.Chests, left, Player.m_localPlayer.transform.position, rules);
+                ChestExplain.Log(Module.Chests, "Fetching", items);
+                string why = ChestExplain.ShortReason(items);
+                if (why != null)
+                {
+                    text.Append($" {char.ToUpperInvariant(why[0])}{why.Substring(1)}.");
+                }
+                else if (result.ChestsOutOfReach > 0)
+                {
+                    text.Append($" Left out {result.ChestsOutOfReach} {(result.ChestsOutOfReach == 1 ? "chest" : "chests")} beyond the server's reach.");
+                }
+                else if (result.ChestsNoAnswer > 0)
+                {
+                    text.Append($" {result.ChestsNoAnswer} {(result.ChestsNoAnswer == 1 ? "chest wasn't" : "chests weren't")} handed to you in time.");
+                }
+            }
+            else if (result.ChestsNoAnswer > 0)
+            {
+                text.Append($" {result.ChestsNoAnswer} {(result.ChestsNoAnswer == 1 ? "chest wasn't" : "chests weren't")} handed to you in time.");
             }
             if (result.InventoryFull)
             {
@@ -882,6 +1016,108 @@ namespace AddToCart
             popup.SetActive(true);
             popup.transform.SetAsLastSibling();
         }
+
+        /// <summary>The most items the question names one by one; the rest are counted.</summary>
+        private const int LastOnesListed = 6;
+
+        // "True counts" and a fetch that would take the last one of something from a chest (card A83, his words): which
+        // items, how many, and three answers. One question for the whole fetch, naming every such item: one fetch, one
+        // answer. Inside the window, which already holds the game's input, so it holds none of its own.
+        // Each answer is a fetch as the window already knows them, so the cart afterwards follows its usual rule (it goes once
+        // a fetch has covered all of it): "Take it anyway" as with leave-one off (all of it covered, counted whole: covered),
+        // "Take all but one" as with True counts off (covered only if leave-one's counts covered it: keptCovered).
+        // The rules are the ones the orders were counted with, carried to the answer (LESSONS_LEARNED: a question carries
+        // what was seen), so a setting changed in F1 while it shows can't make the answer fetch from other chests.
+        private static void AskLastOnes(Dictionary<string, int> whole, Dictionary<string, int> kept, List<LastOne> lastOnes,
+                                        ChestRules rules, bool covered, bool keptCovered, List<string> fetchedKeys)
+        {
+            if (lastPopup == null)
+            {
+                lastPopup = Ui.Box("AddToCart_LastOnes", window.transform, 0f, 0f, Width, Height, new Color(0f, 0f, 0f, 0.55f));
+                GameObject panel = GUIManager.Instance.CreateWoodpanel(lastPopup.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, 620f, 380f, false);
+                Ui.Label(panel.transform, "Take the last ones?", 20f, 16f, 580f, 34f, 22, TextAnchor.MiddleCenter, Ui.Orange, bold: true);
+                lastPopupText = Ui.Label(panel.transform, string.Empty, 30f, 56f, 560f, 252f, 16, TextAnchor.UpperCenter);
+                // Long names that wrap shrink the text rather than lose its last lines (review of card A83).
+                lastPopupText.resizeTextForBestFit = true;
+                lastPopupText.resizeTextMinSize = 11;
+                lastPopupText.resizeTextMaxSize = 16;
+                Ui.Button(panel.transform, "Take it anyway", 30f, 322f, 190f, 38f, () => Module.Guard("answering the pop-up", () =>
+                {
+                    lastPopup.SetActive(false);
+                    lastAnyway?.Invoke();
+                }));
+                Ui.Button(panel.transform, "Take all but one", 230f, 322f, 200f, 38f, () => Module.Guard("answering the pop-up", () =>
+                {
+                    lastPopup.SetActive(false);
+                    lastAllButOne?.Invoke();
+                }));
+                Ui.Button(panel.transform, "Cancel", 440f, 322f, 150f, 38f, () => Module.Guard("answering the pop-up", CancelLastOnes));
+            }
+            var text = new StringBuilder("This fetch would take the last one from some chests (\"Leave one of each item in chests\"):\n");
+            foreach (LastOne each in lastOnes.Take(LastOnesListed))
+            {
+                text.Append($"\n{ItemName(each.Item)} ×{each.Wanted}: {each.Count} of them the last in {(each.Count == 1 ? "its chest" : "their chests")}");
+            }
+            if (lastOnes.Count > LastOnesListed)
+            {
+                int more = lastOnes.Count - LastOnesListed;
+                text.Append($"\n… and {more} more {(more == 1 ? "item" : "items")}");
+            }
+            text.Append("\n\nTake all but one leaves one of each in every chest.");
+            lastPopupText.text = text.ToString();
+            lastAnyway = () => TakeLastOnes(whole, kept, lastOnes, rules, covered, fetchedKeys);
+            lastAllButOne = () => TakeAllButOne(kept, rules, keptCovered, fetchedKeys);
+            lastPopup.SetActive(true);
+            lastPopup.transform.SetAsLastSibling();
+        }
+
+        private static void CancelLastOnes()
+        {
+            if (lastPopup != null)
+            {
+                lastPopup.SetActive(false);
+            }
+            statusText.text = "Nothing fetched.";
+        }
+
+        // "Take it anyway": all leave-one allows first, then only the last ones named (LastOnesFetch).
+        private static void TakeLastOnes(Dictionary<string, int> whole, Dictionary<string, int> kept, List<LastOne> lastOnes,
+                                         ChestRules seen, bool coveredAtStart, List<string> fetchedKeys)
+        {
+            ChestRules first = With(seen, leaveOne: true);
+            ChestRules second = With(seen, leaveOne: false);
+            statusText.text = "Fetching…";
+            fetchButton.interactable = false;
+            if (!LastOnesFetch.Start(Module.Chests, whole, kept, lastOnes, first, second,
+                                     (result, left) => Fetched(result, coveredAtStart, fetchedKeys, second, left)))
+            {
+                statusText.text = "A fetch is under way: try again in a moment.";
+                fetchButton.interactable = true;
+            }
+        }
+
+        // "Take all but one": the order as leave-one allows it, one left in every chest: what a fetch does with True counts off.
+        private static void TakeAllButOne(Dictionary<string, int> kept, ChestRules seen, bool coveredAtStart, List<string> fetchedKeys)
+        {
+            var order = kept.Where(each => each.Value > 0).ToDictionary(each => each.Key, each => each.Value);
+            if (order.Count == 0)
+            {
+                statusText.text = "Nothing fetched: leaving one in each chest, the chests can give none of it.";
+                return;
+            }
+            StartFetch(order, With(seen, leaveOne: true), coveredAtStart, fetchedKeys);
+        }
+
+        // A copy of the rules with leave-one as given.
+        private static ChestRules With(ChestRules rules, bool leaveOne) => new ChestRules
+        {
+            Range = rules.Range,
+            OnlyBuiltByMe = rules.OnlyBuiltByMe,
+            LeaveOne = leaveOne,
+            LeaveOneOfGear = rules.LeaveOneOfGear,
+            Skip = rules.Skip,
+            UseReserved = rules.UseReserved,
+        };
 
         // ---- The window's own canvas ----
 
@@ -962,6 +1198,7 @@ namespace AddToCart
             Greys.Prune();
             Transform root = window.transform;
             popup = null;
+            lastPopup = null;
 
             // Left: the browser (tabs, the list on the left, Group, Sort, the thumbnails); the hover lines under it, with
             // the thumbnail under the pointer beside them.
@@ -969,6 +1206,25 @@ namespace AddToCart
             Browser.Build(root);
             locateButton = Ui.Button(root, "Locate", Browser.ResultsX + Browser.ResultsWidth - 176f, Browser.TabsY, 176f, 32f,
                                      () => Module.Guard("locating", LocateClicked));
+            // True counts (card A83): a checkbox and its name, as "First" is drawn, left of Locate.
+            trueSwitch = Ui.Box("AddToCart_TrueCounts", root, Browser.ResultsX + Browser.ResultsWidth - 176f - 142f, Browser.TabsY, 134f, 32f);
+            trueBox = Ui.Checkbox(trueSwitch.transform, 0f, 5f, 22f);
+            trueBox.onValueChanged.AddListener(on => Module.Guard("switching true counts", () => TrueCountsSwitched(on)));
+            Clicks boxHover = trueBox.gameObject.AddComponent<Clicks>();
+            boxHover.Enter = ShowTrueHint;
+            boxHover.Exit = ClearHover;
+            trueLabel = Ui.Label(trueSwitch.transform, "True counts", 28f, 0f, 106f, 32f, 15, TextAnchor.MiddleLeft, Ui.Plain);
+            trueLabel.raycastTarget = true;
+            Clicks labelClicks = trueLabel.gameObject.AddComponent<Clicks>();
+            labelClicks.Left = () =>
+            {
+                if (trueBox.interactable)
+                {
+                    trueBox.isOn = !trueBox.isOn;
+                }
+            };
+            labelClicks.Enter = ShowTrueHint;
+            labelClicks.Exit = ClearHover;
             hoverIcon = Ui.Icon(root, null, Browser.Left, Browser.GridBottom + 5f, 46f);
             hoverIcon.enabled = false;
             hoverText = Ui.Label(root, string.Empty, Browser.Left + 54f, Browser.GridBottom + 4f, RightX - Browser.Left - 74f, 50f, 15, TextAnchor.UpperLeft);

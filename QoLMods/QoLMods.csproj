@@ -19,7 +19,7 @@
     <TargetFramework>net472</TargetFramework>
     <AssemblyName>QoLMods</AssemblyName>
     <RootNamespace>QoLMods</RootNamespace>
-    <Version>0.6.5</Version>
+    <Version>0.45.1</Version>
     <!-- Keep the private repo's commit id out of the DLL's version text. -->
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <LangVersion>10.0</LangVersion>
@@ -54,6 +54,26 @@
     <Compile Include="..\MapZoom\src\**\*.cs" Link="Modules\MapZoom\%(RecursiveDir)%(Filename)%(Extension)" />
     <Compile Include="..\TraderCircles\src\**\*.cs" Link="Modules\TraderCircles\%(RecursiveDir)%(Filename)%(Extension)" />
     <Compile Include="..\AddToCart\src\**\*.cs" Link="Modules\AddToCart\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\MapViewRules\src\**\*.cs" Link="Modules\MapViewRules\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\CraftFromChests\src\**\*.cs" Link="Modules\CraftFromChests\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\ReserveStock\src\**\*.cs" Link="Modules\ReserveStock\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\Handyman\src\**\*.cs" Link="Modules\Handyman\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\PortionControl\src\**\*.cs" Link="Modules\PortionControl\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\ComfortBuild\src\**\*.cs" Link="Modules\ComfortBuild\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\StoreStash\src\**\*.cs" Link="Modules\StoreStash\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\Terraformer\src\**\*.cs" Link="Modules\Terraformer\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\ItemStandIcons\src\**\*.cs" Link="Modules\ItemStandIcons\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\UseCase\src\**\*.cs" Link="Modules\UseCase\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\BarNone\src\**\*.cs" Link="Modules\BarNone\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\HouseTrained\src\**\*.cs" Link="Modules\HouseTrained\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\Outfitter\src\**\*.cs" Link="Modules\Outfitter\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\Grounded\src\**\*.cs" Link="Modules\Grounded\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\PowerWheel\src\**\*.cs" Link="Modules\PowerWheel\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\SpareKeys\src\**\*.cs" Link="Modules\SpareKeys\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\TopperUpper\src\**\*.cs" Link="Modules\TopperUpper\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\MenUI\src\**\*.cs" Link="Modules\MenUI\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\Hoarstone\src\**\*.cs" Link="Modules\Hoarstone\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\AFKRaidBlocker\src\**\*.cs" Link="Modules\AFKRaidBlocker\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
   <!-- Every reference any module needs. A module that needs a new one adds it here and to its own project. -->
@@ -69,6 +89,11 @@
     </Reference>
     <Reference Include="assembly_guiutils">
       <HintPath>$(ValheimManaged)\assembly_guiutils.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- The game's player accounts (PlatformUserID, PlatformManager), for Map View Rules: whose a pin is -->
+    <Reference Include="Splatform">
+      <HintPath>$(ValheimManaged)\Splatform.dll</HintPath>
       <Private>false</Private>
     </Reference>
 
@@ -101,6 +126,32 @@
       <HintPath>$(ValheimManaged)\UnityEngine.TextRenderingModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <!-- Terraformer: the ring on a round terrain tool's ghost (a particle system), grown with the radius -->
+    <Reference Include="UnityEngine.ParticleSystemModule">
+      <HintPath>$(ValheimManaged)\UnityEngine.ParticleSystemModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Map View Rules: its zoom readout's text (TextMeshPro, as the map's own labels) and its buttons in a configuration
+         manager's window (IMGUI) -->
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>$(ValheimManaged)\Unity.TextMeshPro.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(ValheimManaged)\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- House Trained: the navmesh's own queries for tames' wander points (a point put on a tame's own navmesh, whether
+         a tame stands on it) -->
+    <Reference Include="UnityEngine.AIModule">
+      <HintPath>$(ValheimManaged)\UnityEngine.AIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Handyman: whether the game's Hide key is still held after it took the key's press (its Input System action) -->
+    <Reference Include="Unity.InputSystem">
+      <HintPath>$(ValheimManaged)\Unity.InputSystem.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
 
     <!-- BepInEx, HarmonyX and Jotunn, from the mod profile -->
     <Reference Include="BepInEx">
@@ -113,6 +164,11 @@
     </Reference>
     <Reference Include="Jotunn">
       <HintPath>$(ModProfile)\BepInEx\plugins\ValheimModding-Jotunn\Jotunn.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Spare Keys: reading other mods' code once at start for keys they read with no setting (Mono.Cecil, shipped with BepInEx) -->
+    <Reference Include="Mono.Cecil">
+      <HintPath>$(ModProfile)\BepInEx\core\Mono.Cecil.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>

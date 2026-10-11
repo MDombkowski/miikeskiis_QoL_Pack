@@ -250,7 +250,84 @@ namespace AddToCart
             return order;
         }
 
+        /// <summary>
+        /// "True counts" (card A83): the items of a fetch that would take the last one from a chest. <paramref name="whole"/>
+        /// is the fetch's order counted from the whole counts (Order of Materials on ChestSurvey.Whole), <paramref name="kept"/>
+        /// the order counted as leave-one allows (on ChestSurvey.Stock). An item whose whole order is more than leave-one
+        /// allows takes that many last ones: each one beyond is a chest's last of it. In the whole order's order of keys.
+        /// </summary>
+        internal static List<LastOne> LastOnes(IDictionary<string, int> whole, IDictionary<string, int> kept)
+        {
+            var lastOnes = new List<LastOne>();
+            foreach (KeyValuePair<string, int> want in whole)
+            {
+                int allowed = Get(kept, want.Key);
+                if (want.Value > allowed)
+                {
+                    lastOnes.Add(new LastOne { Item = want.Key, Wanted = want.Value, Allowed = allowed });
+                }
+            }
+            return lastOnes;
+        }
+
+        // "Take all but one" is the kept order itself: exactly the fetch the window makes with True counts off. Not the whole
+        // order cut item by item: where a recipe's ingredient by name and a Take line of one level share stacks (fish, gear),
+        // the levels' larger whole promise can leave the name less than leave-one's counting gives it (the harness's group 4).
+
+        /// <summary>"Take it anyway", its first fetch: the whole order cut by what leave-one allows, key by key (the smaller
+        /// of the two), keys of the whole order only. Not the kept order: where a recipe's ingredient by name and a Take line
+        /// of one level share stacks, the kept order can ask more by name than the whole order did, and a take by name
+        /// (lowest level first) would take the level a Take line wanted (review of card A83, minor 3).</summary>
+        internal static Dictionary<string, int> WholeCutByKept(IDictionary<string, int> whole, IDictionary<string, int> kept)
+        {
+            var order = new Dictionary<string, int>();
+            foreach (KeyValuePair<string, int> want in whole)
+            {
+                int amount = want.Value < Get(kept, want.Key) ? want.Value : Get(kept, want.Key);
+                if (amount > 0)
+                {
+                    order[want.Key] = amount;
+                }
+            }
+            return order;
+        }
+
+        /// <summary>"Take it anyway", its later fetches (spares first, then leave-one off): of each item, the last ones the question named
+        /// (Wanted less Allowed), and never more than the first fetch (the kept order, as leave-one allows it) left of the
+        /// whole order (<paramref name="moved"/>: what it brought). So it takes no more last ones than he agreed to, whatever changed in
+        /// the chests meanwhile, and the two fetches together never more than the whole order.</summary>
+        internal static Dictionary<string, int> LastOnesOrder(IEnumerable<LastOne> lastOnes, IDictionary<string, int> moved)
+        {
+            var order = new Dictionary<string, int>();
+            foreach (LastOne each in lastOnes)
+            {
+                int left = each.Wanted - Get(moved, each.Item);
+                int amount = each.Count < left ? each.Count : left;
+                if (amount > 0)
+                {
+                    order[each.Item] = amount;
+                }
+            }
+            return order;
+        }
+
         private static int Get(IDictionary<string, int> amounts, string item) =>
             amounts != null && amounts.TryGetValue(item, out int amount) ? amount : 0;
+    }
+
+    /// <summary>An item a fetch would take the last one of from some chests (CartMath.LastOnes).</summary>
+    internal sealed class LastOne
+    {
+        /// <summary>The item's key.</summary>
+        internal string Item;
+
+        /// <summary>What the fetch asks of it, from the whole counts.</summary>
+        internal int Wanted;
+
+        /// <summary>What leave-one allows of it: one stays in each chest.</summary>
+        internal int Allowed;
+
+        /// <summary>How many of those asked are a chest's last one.</summary>
+        internal int Count => Wanted - Allowed;
     }
 }

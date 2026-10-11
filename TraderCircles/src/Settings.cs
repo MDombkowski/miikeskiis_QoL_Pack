@@ -33,15 +33,18 @@ namespace TraderCircles
             // their Order, highest first; the bundle puts both parts in one section, so the orders run on across them.
             Enabled = settings.Enabled;
 
+            // Every trader on out of the box since card A63 (2026-10-06, his own settings made the pack's defaults; off
+            // before, MODULES.md rule 4): a file still at the old default moves once (the kit's MovedDefault).
             int order = 90;
             foreach (Trader trader in Trader.All)
             {
-                trader.Shown = settings.Bind(ModuleSettings.General, trader.Key, false,
+                trader.Shown = settings.Bind(ModuleSettings.General, trader.Key, true,
                     $"Circles for {trader.DisplayName}", order,
-                    $"On: circles on the big map around every place {trader.DisplayName} could still be, until " +
-                    $"{trader.DisplayName} is found (by you or anyone else in the world). The first time this is on in a " +
-                    "world, the mod asks the server where those places are, as a vegvisir does, and keeps the answer to " +
-                    "itself: no pins, no messages.");
+                    $"On (the default): circles on the big map around every place {trader.DisplayName} could still be, " +
+                    $"until {trader.DisplayName} is found (by you or anyone else in the world). The first time this is on in " +
+                    "a world, the mod asks the server where those places are, as a vegvisir does, and keeps the answer to " +
+                    "itself: no pins, no messages. Off: no circles for them.");
+                settings.MovedDefault(trader.Shown, false, 1);
                 order -= 10;
             }
 

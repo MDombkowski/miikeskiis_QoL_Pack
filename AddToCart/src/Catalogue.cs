@@ -156,14 +156,15 @@ namespace AddToCart
             return entries;
         }
 
-        /// <summary>The Take tab: one entry per kind of item the chests may give, from a survey of them.</summary>
-        internal static List<Entry> Take(ChestSurvey survey)
+        /// <summary>The Take tab: one entry per kind of item the chests may give, from a survey of them; with
+        /// <paramref name="whole"/> ("True counts", card A83) also what leave-one keeps back (a chest's only one).</summary>
+        internal static List<Entry> Take(ChestSurvey survey, bool whole)
         {
             GameFacts.Prepare();
             var entries = new List<Entry>();
             foreach (KeyValuePair<string, ItemDrop.ItemData> each in survey.Samples)
             {
-                if (survey.StockOf(each.Key) <= 0)
+                if ((whole ? survey.WholeOf(each.Key) : survey.StockOf(each.Key)) <= 0)
                 {
                     continue;
                 }

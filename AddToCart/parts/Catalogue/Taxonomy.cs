@@ -151,6 +151,63 @@ namespace QoLMods.Catalogue
 
         internal static readonly string[] AmmoOrder = { "Arrows", "Bolts", "Siege and Ballista", "Other Ammo" };
 
+        // ---------------------------------------------------------------- Take: quick picks (card A81)
+
+        /// <summary>The smelted bars of Metals (the wiki's "Ingots"); the rest of MetalOf are ores and scrap.</summary>
+        internal static readonly HashSet<string> Ingots = new HashSet<string> { "Copper", "Tin", "Bronze", "Iron", "Silver", "BlackMetal", "FlametalNew", "Gold" };
+
+        /// <summary>The stations that cook meat and fish (a Simple Food made at one is cooked).</summary>
+        internal static readonly HashSet<string> CookedAt = new HashSet<string> { "Cooking Station", "Iron Cooking Station" };
+
+        /// <summary>Raw meat and fish besides every fish and every "...Meat" prefab of Cooking Ingredients.</summary>
+        internal static readonly HashSet<string> RawMeatAndFish = new HashSet<string> { "NeckTail", "SealBlubber", "FishRaw", "FishAnglerRaw" };
+
+        /// <summary>
+        /// The quick picks (card A81, his feedback of 2026-10-09): natural groups of one family's things, each taken in one
+        /// click on its family's page (and its member's, for a group inside one member) and named as such in a setup ("Metal
+        /// Ingots", never "Metals, except ..."). A group inside one member (its Member) counts as specific as one of Gear's
+        /// kinds; one across members as a member (ItemPick.Strength). Their labels are a setup's words in a chest's record,
+        /// like a family's: a label renamed here goes into ItemPicks.Renamed ("g:Family/Old"). Each is one line: family,
+        /// member ("" for across members), label, what the setup window's bottom line says of it, and its rule, on the item's
+        /// facts and its food preparation (Items.Home).
+        /// </summary>
+        internal static readonly QuickPick[] QuickPicks =
+        {
+            new QuickPick("Metals", "", "Metal Ingots", "the smelted bars (Copper, Tin, Bronze, Iron, Silver, Black Metal, Flametal and Bloodgold).",
+                          (it, prep) => Ingots.Contains(it.Prefab ?? string.Empty)),
+            new QuickPick("Metals", "", "Metal Ores and Scrap", "every ore and scrap, for a smelter or blast furnace.",
+                          (it, prep) => MetalOf.ContainsKey(it.Prefab ?? string.Empty) && !Ingots.Contains(it.Prefab ?? string.Empty)),
+            new QuickPick("Food", "Ready to Eat", "Prepared Dishes", "food made at a cauldron, stone oven, mead ketill or food preparation table, and feasts.",
+                          (it, prep) => prep == "Prepared Dishes"),
+            new QuickPick("Food", "Ready to Eat", "Cooked Meat and Fish", "what a cooking station or iron cooking station cooks.",
+                          (it, prep) => prep == "Simple Foods" && it.MadeAt.Overlaps(CookedAt)),
+            new QuickPick("Food", "Cooking Ingredients", "Raw Meat and Fish", "raw meat, neck tails, seal blubber and fish, to cook.",
+                          (it, prep) => it.Type == "Fish" || RawMeatAndFish.Contains(it.Prefab ?? string.Empty) || (it.Prefab ?? string.Empty).EndsWith("Meat")),
+            new QuickPick("Food", "Ready to Eat", "Health Foods", "food the game marks red: far more health than stamina.",
+                          (it, prep) => Items.FoodStat(it) == "Health"),
+            new QuickPick("Food", "Ready to Eat", "Stamina Foods", "food the game marks yellow: far more stamina than health.",
+                          (it, prep) => Items.FoodStat(it) == "Stamina"),
+            new QuickPick("Food", "Ready to Eat", "Eitr Foods", "food the game marks blue: far more eitr than health or stamina.",
+                          (it, prep) => Items.FoodStat(it) == "Eitr"),
+            new QuickPick("Food", "Ready to Eat", "Balanced Foods", "food the game leaves white: no stat far above the others.",
+                          (it, prep) => Items.FoodStat(it) == "Balanced"),
+            new QuickPick("Meads and Potions", "", "Finished Meads", "what a fermenter makes: the meads to drink, not their bases.",
+                          (it, prep) => it.MadeAt.Contains("Fermenter")),
+        };
+
+        /// <summary>A family's quick pick by its label, or null (none: another version's, or renamed away).</summary>
+        internal static QuickPick QuickPickOf(string family, string label)
+        {
+            foreach (QuickPick quick in QuickPicks)
+            {
+                if (quick.Family == family && quick.Label == label)
+                {
+                    return quick;
+                }
+            }
+            return null;
+        }
+
         // ---------------------------------------------------------------- Build: pieces
 
         /// <summary>The wood, stone and metal a piece can be made of (the game's prefab names), each with its label and
@@ -234,6 +291,49 @@ namespace QoLMods.Catalogue
         /// <summary>The Obliterator turns any trophy or arrow into coal: not a way anyone makes coal, so it is left out (his
         /// call, 2026-09-26).</summary>
         internal const string Obliterator = "incinerator";
+
+        // ---------------------------------------------------------------- Comfort: the groups (Comfort Build, card A13)
+
+        /// <summary>The comfort groups (Piece.ComfortGroup, by name) and their labels, in the game's own order, with the
+        /// pieces that have no group ("None": each kind counts once) last, as Other. Only the best piece of each group
+        /// counts toward comfort. A group a later game adds shows under its own name.</summary>
+        internal static readonly (string Group, string Label)[] ComfortGroups =
+        {
+            ("Fire", "Fires"), ("Bed", "Beds"), ("Banner", "Banners and Curtains"), ("Chair", "Chairs"), ("Table", "Tables"),
+            ("Carpet", "Rugs and Carpets"), ("Display", "Displays"), ("Decor", "Decor"), ("Garland", "Garlands"),
+            ("Lantern", "Lanterns"), ("Leisure", "Leisure"), ("None", "Other"),
+        };
+
+        /// <summary>A comfort group's label, by the group's name (Piece.ComfortGroup.ToString()).</summary>
+        internal static string ComfortLabel(string group)
+        {
+            foreach ((string name, string label) in ComfortGroups)
+            {
+                if (name == group)
+                {
+                    return label;
+                }
+            }
+            return group ?? string.Empty;
+        }
+
+        /// <summary>What follows a piece's comfort, in brackets, wherever a mod names it ("Comfort 2 (Chairs)"): its group,
+        /// or, for a piece with no group, how it counts.</summary>
+        internal static string ComfortKind(string group) => group == "None" ? "each kind counts once" : ComfortLabel(group);
+
+        /// <summary>The comfort groups' labels in their default order, as a module's setting shows them.</summary>
+        internal static string DefaultComfortGroupLine
+        {
+            get
+            {
+                var labels = new List<string>();
+                foreach ((string _, string label) in ComfortGroups)
+                {
+                    labels.Add(label);
+                }
+                return string.Join(", ", labels);
+            }
+        }
 
         // ---------------------------------------------------------------- Lookups built once from the tables above
 

@@ -17,7 +17,7 @@ namespace MapZoom
 
         internal const string Name = "Map Zoom";
 
-        internal const string Version = "0.1.0";
+        internal const string Version = "0.1.1";
 
         private static Module current;
 

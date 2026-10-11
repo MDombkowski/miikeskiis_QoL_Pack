@@ -7,9 +7,10 @@ namespace XPortalMapPicker
 {
     /// <summary>
     /// XPortal Map Picker as a module of miikeskii's QoL Pack: a Map button beside XPortal's destination list that
-    /// lets the player choose a portal's destination on the big map. Client-side only: the choice goes to the server
-    /// through XPortal's own OK button, so neither the server nor other players need this mod. The same code runs in
-    /// the bundle and in its single release (standalone\Plugin.cs); see QoLMods\MODULES.md.
+    /// lets the player choose a portal's destination on the big map, and, when its settings ask, every portal in
+    /// XPortal's list as a pin on the big map and the minimap (PortalPins). Client-side only: the choice goes to the
+    /// server through XPortal's own OK button, so neither the server nor other players need this mod. The same code runs
+    /// in the bundle and in its single release (standalone\Plugin.cs); see QoLMods\MODULES.md.
     /// </summary>
     internal sealed class Module : QoLModule
     {
@@ -18,7 +19,7 @@ namespace XPortalMapPicker
 
         internal const string Name = "XPortal Map Picker";
 
-        internal const string Version = "0.4.0";
+        internal const string Version = "0.6.2";
 
         private static Module current;
 
@@ -36,8 +37,9 @@ namespace XPortalMapPicker
         internal override string SingleGuid => Guid;
 
         internal override string EnabledDescription =>
-            "Turns the mod on or off. Off takes the Map button away, at once if a portal's panel is open, and ends " +
-            "any picking; XPortal then works exactly as it does without this mod. On brings the button back.";
+            "Turns the mod on or off. Off takes the Map button away, at once if a portal's panel is open, ends any " +
+            "picking and takes the portal pins off the map; XPortal then works exactly as it does without this mod. " +
+            "On brings them back.";
 
         internal override string SwitchedOffNote => "XPortal itself works as usual.";
 
@@ -48,7 +50,7 @@ namespace XPortalMapPicker
         internal override string ReadyMessage =>
             $"{Name} {Version} is ready for XPortal {XPortalHooks.Version}: look for the Map button beside a portal's destination list.";
 
-        internal override IEnumerable<Action> UndoSteps => new Action[] { PickMode.Abandon, MapButton.Remove };
+        internal override IEnumerable<Action> UndoSteps => new Action[] { PickMode.Abandon, MapButton.Remove, PortalPins.Remove, PortalPins.RemoveHover, PanelFront.Restore };
 
         internal static ManualLogSource Log => current.Host.Log;
 
@@ -76,6 +78,8 @@ namespace XPortalMapPicker
         {
             PickMode.Tick();
             MapButton.Tick();
+            PanelFront.Tick();   // XPortal's panel kept usable while it shows (card A71)
+            Guard("showing the portals as pins on the map", PortalPins.Tick);
         }
 
         // After every Update, so the map has already moved this frame when the markers are placed on it.
@@ -85,6 +89,7 @@ namespace XPortalMapPicker
             {
                 PickMode.PlaceMarkers();
             }
+            Guard("showing a portal's name under the pointer", PortalPins.AfterFrame);
         }
     }
 }

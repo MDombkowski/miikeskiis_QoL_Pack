@@ -25,13 +25,15 @@ namespace MapZoom
             // their Order, highest first.
             Enabled = settings.Enabled;
 
-            NotchesEndToEnd = settings.Bind(ModuleSettings.General, "NotchesEndToEnd", 18,
+            // 10 since card A63 (2026-10-06, his own setting made the default; 18 before): a file still at 18 moves once.
+            NotchesEndToEnd = settings.Bind(ModuleSettings.General, "NotchesEndToEnd", 10,
                 "Scroll notches, fully in to fully out", 2,
                 "How many notches of the mouse wheel take the big map from fully zoomed in to fully zoomed out, and " +
                 "the same number back. Fewer zooms faster. Every notch zooms by the same step, so it feels the same " +
-                "at every zoom. Without the mod the game takes about 44 notches out and 40 back in. The comma and " +
-                "period keys and a gamepad zoom as they always do.",
+                "at every zoom. 10 by default; without the mod the game takes about 44 notches out and 40 back in. The " +
+                "comma and period keys and a gamepad zoom as they always do.",
                 new AcceptableValueRange<int>(FewestNotches, 60));
+            settings.MovedDefault(NotchesEndToEnd, 18, 1);
 
             ZoomTowardPointer = settings.Bind(ModuleSettings.General, "ZoomTowardPointer", true,
                 "Zoom toward the mouse pointer", 1,

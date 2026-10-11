@@ -39,7 +39,7 @@ namespace TraderCircles
 
         internal Color DefaultColour { get; }
 
-        /// <summary>Its own on/off switch (off by default).</summary>
+        /// <summary>Its own on/off switch (on by default since card A63; off before).</summary>
         internal ConfigEntry<bool> Shown { get; set; }
 
         internal ConfigEntry<Color> Colour { get; set; }

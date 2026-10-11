@@ -1,6 +1,6 @@
 # Map Zoom
 
-Zoom the big map with fewer turns of the mouse wheel, toward where the mouse points. Without it, Valheim takes about 44 notches of the wheel to go from fully zoomed in to fully zoomed out; with it, 18 by default, or as many as you like.
+Zoom the big map with fewer turns of the mouse wheel, toward where the mouse points. Without it, Valheim takes about 44 notches of the wheel to go from fully zoomed in to fully zoomed out; with it, 10 by default, or as many as you like.
 
 ## What it does
 
@@ -31,7 +31,7 @@ Open the settings in game with a configuration manager (shudnal's ConfigurationM
 | Setting | Default | What it does |
 |---|---|---|
 | Enabled | on | Off gives the mouse wheel back to the game's own zoom at once; on brings this mod's zoom back. |
-| Scroll notches, fully in to fully out | 18 | How many notches of the wheel go from fully zoomed in to fully zoomed out, and back. 4 to 60; fewer zooms faster. The game's own is about 44 out and 40 in. |
+| Scroll notches, fully in to fully out | 10 | How many notches of the wheel go from fully zoomed in to fully zoomed out, and back. 4 to 60; fewer zooms faster. The game's own is about 44 out and 40 in. |
 | Zoom toward the mouse pointer | on | On: the place under the pointer stays under it. Off: zooms around the middle of the view. |
 
 ## If something goes wrong

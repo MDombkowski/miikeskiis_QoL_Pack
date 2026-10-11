@@ -6,8 +6,10 @@ namespace QoLMods.Chests
     /// <summary>
     /// The reserve mark of Reserve Stock (card A12): a chest carrying it is left alone by every mod of the bundle that
     /// takes from or counts chests. The mark lives in the chest's own network record, so the unmodded server keeps it
-    /// with the world and every player nearby receives it. The chest service honours it from its first version, so
-    /// Reserve Stock only has to write it (with the chest owned, as a click in the open chest's window is).
+    /// with the world and every player nearby receives it. The chest service honours it from its first version: it never
+    /// takes from a marked chest (checked again once the chest is handed over, and at the take itself, ChestStock.Take and
+    /// Remove), unless a module's rules use reserved chests like any other (ChestRules.UseReserved), and it counts marked
+    /// chests apart. Reserve Stock writes it, always as the chest's owner (ReserveStock\src\Mark.cs).
     /// </summary>
     internal static class ChestReserve
     {
@@ -16,7 +18,7 @@ namespace QoLMods.Chests
 
         internal static bool IsReserved(Container chest)
         {
-            ZNetView view = ChestHooks.NetView(chest);
+            ZNetView view = chest != null ? ChestHooks.NetView(chest) : null;
             return view != null && view.IsValid() && view.GetZDO().GetBool(Key);
         }
     }

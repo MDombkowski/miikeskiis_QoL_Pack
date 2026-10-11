@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using Jotunn.Managers;
 using QoLMods.Catalogue;
+using QoLMods.ItemStands;
+using QoLMods.Pictures;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -43,11 +45,15 @@ namespace AddToCart
         // Reading a copy back waits once a frame for the graphics card; more copies in the same frame cost little (review 1).
         private const int GreysPerFrame = 30;
 
+        /// <summary>The grey copies' version the cells were last drawn with (Greys.Version).</summary>
+        private static int greysDrawn = -1;
+
         /// <summary>What one tab shows: the pick on the left, its Group and Sort, which families are open, and which of the
-        /// list's headings are folded away.</summary>
+        /// list's headings are folded away. A row of the item stand filter is picked as Stand, with Pick left at All.</summary>
         private sealed class View
         {
             internal Selection Pick = Selection.All;
+            internal StandPick Stand = StandPick.None;
             internal string Group;
             internal string Sort;
             internal readonly HashSet<string> Open = new HashSet<string>();
@@ -57,6 +63,7 @@ namespace AddToCart
         private sealed class CellView
         {
             internal Entry Entry;
+            internal Transform Root;
             internal Image Back;
             internal Thumbnail Picture;
             internal bool Unavailable;
@@ -80,6 +87,7 @@ namespace AddToCart
         private static readonly string[] OrdersFrom = new string[5];
         private static bool shownExpandable;
         private static bool shownFirst;
+        private static bool shownStandRows;
         private static string sortShownId = Browse.Progression;
         private static List<GroupOption> groupOptions = new List<GroupOption>();
         private static List<SortOption> sortOptions = new List<SortOption>();
@@ -196,13 +204,16 @@ namespace AddToCart
                 searchBox.Select();
                 searchBox.ActivateInputField();
             }
-            else if (!Ui.Typing() && !ListsPopup.IsOpen && ZInput.GetKeyDown(KeyCode.F, false))
+            else if (!Ui.Typing() && !ListsPopup.IsOpen && !CartWindow.PopupOpen && ZInput.GetKeyDown(KeyCode.F, false))
             {
                 focusSearch = true;
             }
-            // Grey copies of the pictures, a few a frame (Greys): the cells waiting for one show it once it is made.
-            if (Greys.Work(GreysPerFrame) > 0)
+            // Grey copies of the pictures, a few a frame (Greys): the cells waiting for one show it once it is made,
+            // whichever module's Work made it (in the pack, Comfort Build's may).
+            Greys.Work(GreysPerFrame);
+            if (Greys.Version != greysDrawn)
             {
+                greysDrawn = Greys.Version;
                 foreach (CellView cell in Cells)
                 {
                     cell.Picture.Show(cell.Unavailable);
@@ -213,16 +224,18 @@ namespace AddToCart
                 searchDue = -1f;
                 // Typing searches the whole tab, as the game's filter does; a pick on the left then narrows it.
                 View view = ViewOf(tab);
-                if (query.Length > 0 && view.Pick.Pick != Pick.All)
+                if (query.Length > 0 && (view.Pick.Pick != Pick.All || view.Stand != StandPick.None))
                 {
                     view.Pick = Selection.All;
+                    view.Stand = StandPick.None;
                 }
                 Render();
                 ScrollToTop();
             }
             // A setting changed in a configuration manager while the window is open: the window follows.
             bool defaults = DefaultsChanged();
-            if (OrdersChanged() || defaults || shownExpandable != Settings.ExpandableFamilies.Value || shownFirst != Settings.FavoritesFirst.Value)
+            if (OrdersChanged() || defaults || shownExpandable != Settings.ExpandableFamilies.Value || shownFirst != Settings.FavoritesFirst.Value
+                || shownStandRows != Settings.StandFilter.Value)
             {
                 firstBox.SetIsOnWithoutNotify(Settings.FavoritesFirst.Value);
                 Render();
@@ -383,10 +396,16 @@ namespace AddToCart
             FavoritePieceList store = Favorites.Store;
             // A list deleted in the game's build menu moves the later ones down a number: every tab's pick follows its
             // list by name, or goes back to All.
+            // The item stand filter switched off: no tab stays narrowed by a row it no longer shows.
+            bool standRows = Settings.StandFilter.Value;
             foreach (Tab each in new[] { Tab.Build, Tab.Craft, Tab.Take })
             {
                 View view = ViewOf(each);
                 view.Pick = Browse.Resolve(view.Pick, GameLists.ListCount(store), list => GameLists.ListName(store, list));
+                if (!standRows)
+                {
+                    view.Stand = StandPick.None;
+                }
             }
             RenderRail();
             RenderGrid();
@@ -413,6 +432,7 @@ namespace AddToCart
             if (query.Length > 0)
             {
                 ViewOf(tab).Pick = Selection.All;
+                ViewOf(tab).Stand = StandPick.None;
             }
             return true;
         }
@@ -435,6 +455,7 @@ namespace AddToCart
         {
             FlushSearch();
             ViewOf(tab).Pick = Selection.All;
+            ViewOf(tab).Stand = StandPick.None;
             Render();
             ScrollToTop();
         }
@@ -490,6 +511,7 @@ namespace AddToCart
             internal bool Open;
             internal bool Favorites;
             internal int List = -1;
+            internal StandPick Stand;
         }
 
         private static void RenderRail()
@@ -524,6 +546,11 @@ namespace AddToCart
                     Note("Your favorites and lists appear once your character is in a world.");
                 }
             }
+            shownStandRows = Settings.StandFilter.Value;
+            if (shownStandRows)
+            {
+                StandRails(view);
+            }
             // No dead ends: only what has something in it, as the game hides empty categories (the part's rule).
             foreach (KeyValuePair<string, List<ShownRow>> block in Browse.Shown(Browse.Tree(ShelfOf(tab), listings, orders), Count, searching,
                                                                                 shownExpandable, view.Open))
@@ -540,6 +567,38 @@ namespace AddToCart
         }
 
         private const string YourLists = "Your Lists";
+
+        /// <summary>The rule the item stand filter was last drawn by, so a change to Item Stand Icons' rule redraws it.</summary>
+        private static StandRule filterRuleDrawn;
+
+        // The rule the filter follows: Item Stand Icons' where it's installed, else the game's own.
+        private static StandRule FilterRule() => StandShare.Find()?.Rule ?? StandRule.Default;
+
+        // An entry's fit: an item's (a recipe's is what it makes); a piece never fits.
+        private static Fit FitOf(Entry entry, StandRule rule) => entry.IsBuild ? Fit.None : StandFit.OfName(entry.ItemName, rule);
+
+        // The item stand filter's heading and rows (his 0.16.0 ask), counted as every row is (by what the filter box
+        // matches); only rows with something in them, and the heading only when one has.
+        private static void StandRails(View view)
+        {
+            StandRule rule = FilterRule();
+            filterRuleDrawn = rule;
+            List<Fit> fits = CartWindow.EntriesOf(tab).Where(entry => entry.Listing != null && Browse.Matches(entry.Listing, query))
+                                       .Select(entry => FitOf(entry, rule)).ToList();
+            var counts = StandRows.Rows.Select(pick => fits.Count(fit => StandRows.Passes(pick, fit))).ToList();
+            if (counts.All(count => count == 0) || !Title(StandRows.Heading, view))
+            {
+                return;
+            }
+            for (int index = 0; index < StandRows.Rows.Length; index++)
+            {
+                if (counts[index] > 0)
+                {
+                    StandPick pick = StandRows.Rows[index];
+                    Row(new RailRow { Label = StandRows.Label(pick), Pick = Selection.All, Stand = pick, Count = counts[index] }, view);
+                }
+            }
+        }
 
         private static Func<Listing, bool> Starred(FavoritePieceList store) => listing => GameLists.IsStarred(store, listing.FavoriteKey);
 
@@ -604,7 +663,7 @@ namespace AddToCart
 
         private static void Row(RailRow row, View view)
         {
-            bool picked = view.Pick.Equals(row.Pick);
+            bool picked = view.Pick.Equals(row.Pick) && view.Stand == row.Stand;
             Clicks clicks = Ui.ListRow(rail, RailRowHeight, out Image back);
             back.color = picked ? Ui.RowPicked : Ui.RowPlain;
             float x = row.Member ? 30f : 18f;
@@ -624,6 +683,17 @@ namespace AddToCart
                     Ui.Icon(clicks.transform, star, x, 4f, 16f);
                     x += 20f;
                 }
+            }
+            if (row.Stand != StandPick.None)
+            {
+                // The mark those items carry, in the plain look whatever Item Stand Icons' settings say (a row names a
+                // kind of stand, it isn't a mark); Any stand has none and keeps its place, so the four names line up.
+                Fit mark = StandRows.MarkOf(row.Stand);
+                if (mark != Fit.None)
+                {
+                    Ui.Icon(clicks.transform, StandArrows.Of(mark, BothShape.SideBySide, true), x, 4f, 16f);
+                }
+                x += 20f;
             }
             // One line: a long name ("Food Preparation Table") shrinks a little rather than wrapping (his 0.2.0 note); at
             // 11 points two lines can't fit the row, so it never wraps.
@@ -672,6 +742,7 @@ namespace AddToCart
             if (!onTwisty)
             {
                 view.Pick = row.Pick;
+                view.Stand = row.Stand;
                 Render();
                 ScrollToTop();
             }
@@ -697,7 +768,9 @@ namespace AddToCart
             FavoritePieceList store = Favorites.Store;
             List<Entry> entries = CartWindow.EntriesOf(tab).Where(entry => entry.Listing != null).ToList();
             Func<Listing, bool> starred = Starred(store);
-            List<Entry> shown = entries.Where(entry => Browse.InPick(entry.Listing, view.Pick, starred, InList(store)) && Browse.Matches(entry.Listing, query)).ToList();
+            StandRule standRule = view.Stand != StandPick.None ? FilterRule() : null;
+            List<Entry> shown = entries.Where(entry => Browse.InPick(entry.Listing, view.Pick, starred, InList(store)) && Browse.Matches(entry.Listing, query)
+                                                       && (standRule == null || StandRows.Passes(view.Stand, FitOf(entry, standRule)))).ToList();
             List<Listing> rows = shown.Select(entry => entry.Listing).ToList();
             var byKey = new Dictionary<string, Entry>();
             foreach (Entry entry in shown)
@@ -715,7 +788,8 @@ namespace AddToCart
             Ui.SetChoices(sortList, SortShown, sortOptions.Select(option => option.Label).ToList(), sortOptions.FindIndex(option => option.Id == sortId));
 
             Comparison<Listing> order = Browse.Sorter(sortId, numbers.TryGetValue(sortId, out Func<Listing, double> number) ? number : null);
-            string whole = Browse.Label(view.Pick, list => GameLists.ListName(store, list));
+            string whole = view.Stand != StandPick.None ? StandRows.Title(view.Stand) : Browse.Label(view.Pick, list => GameLists.ListName(store, list));
+            bool narrowed = view.Pick.Pick != Pick.All || view.Stand != StandPick.None;
             List<Listing> rest = rows;
             int total = rows.Count;
             if (Settings.FavoritesFirst.Value && view.Pick.Pick != Pick.Favorites && view.Pick.Pick != Pick.List && store != null)
@@ -738,7 +812,7 @@ namespace AddToCart
                 string text = tab == Tab.Take && entries.Count == 0 ? "The chests in range hold nothing you may take."
                     : $"Nothing here{(query.Length > 0 ? $" for \"{query}\"" : string.Empty)}." +
                       (view.Pick.Pick == Pick.List || view.Pick.Pick == Pick.Favorites ? " Middle-click a thumbnail on any tab to star it or put it in a list." : string.Empty);
-                if (query.Length > 0 && view.Pick.Pick != Pick.All)
+                if (query.Length > 0 && narrowed)
                 {
                     // A pick on the left narrowed the search to nothing: say what All has (review 1).
                     int elsewhere = entries.Count(entry => Browse.Matches(entry.Listing, query));
@@ -767,7 +841,7 @@ namespace AddToCart
             {
                 SetChip(clearChip, $"\"{(query.Length > 12 ? query.Substring(0, 12) + "…" : query)}\" ×");
             }
-            allChip.gameObject.SetActive(view.Pick.Pick != Pick.All);
+            allChip.gameObject.SetActive(narrowed);
             RefreshCells();
         }
 
@@ -843,6 +917,7 @@ namespace AddToCart
             var view = new CellView
             {
                 Entry = entry,
+                Root = cell.transform,
                 Back = cell.GetComponent<Image>(),
                 Picture = Ui.Thumbnail(cell.transform, entry.Icon, 6f, 6f, CellSize - 12f),
                 Count = Ui.Label(cell.transform, string.Empty, 2f, CellSize - 24f, CellSize - 6f, 22f, 16, TextAnchor.LowerRight, Ui.Orange, bold: true),
@@ -917,6 +992,89 @@ namespace AddToCart
                 cell.Count.text = count > 0 ? count.ToString() : string.Empty;
                 cell.Stock.text = cell.Entry.Literal ? CartWindow.Short(CartWindow.StockOf(cell.Entry.Costs[0].Item)) : string.Empty;
                 cell.Star.SetActive(Favorites.IsFavorite(store, cell.Entry));
+            }
+            MarkStands(StandView());
+        }
+
+        /// <summary>The name of Add to Cart's item stand marks (MODULES.md rule 10).</summary>
+        private const string StandMark = "AddToCart_StandMark";
+
+        /// <summary>The name of Add to Cart's armor stand marks.</summary>
+        private const string ArmorMark = "AddToCart_ArmorMark";
+
+        /// <summary>What the item stand marks were last drawn with (the look, compared by reference: a new one is made
+        /// whenever a setting changes; null for none; and the rule), so they're drawn again only when it changes.</summary>
+        private static bool standsDrawnOnce;
+        private static StandLook standLookDrawn;
+        private static StandRule standRuleDrawn;
+
+        /// <summary>
+        /// Every frame the window is open: the thumbnails' item stand marks follow Item Stand Icons' switch, look, rule and
+        /// "hold a key" key at once (the item stands part's StandShare), and this mod's own setting.
+        /// </summary>
+        internal static void TickStandMarks()
+        {
+            if (!CartWindow.IsOpen)
+            {
+                return;
+            }
+            // Item Stand Icons' view, asked at most once a frame, for both the filter and the marks (review 1).
+            bool filter = Settings.StandFilter.Value && filterRuleDrawn != null;
+            bool marks = Settings.ItemStandMarks.Value != StandMarks.Off && Cells.Count > 0;
+            StandView found = filter || marks ? StandShare.Find() : null;
+            if (filter && !(found?.Rule ?? StandRule.Default).SameAs(filterRuleDrawn))
+            {
+                Render();   // the filter's rows and results by the new rule (the marks follow in it)
+                return;
+            }
+            if (Cells.Count == 0)
+            {
+                return;
+            }
+            StandView view = StandView(found);
+            if (!standsDrawnOnce || !ReferenceEquals(view?.Look, standLookDrawn) || (view != null && !view.Rule.SameAs(standRuleDrawn)))
+            {
+                MarkStands(view);
+            }
+        }
+
+        private static StandView alwaysView;
+
+        /// <summary>What the marks show now, by the setting "Item stand marks": null for none.</summary>
+        private static StandView StandView() => StandView(Settings.ItemStandMarks.Value == StandMarks.Off ? null : StandShare.Find());
+
+        private static StandView StandView(StandView found)
+        {
+            StandMarks choice = Settings.ItemStandMarks.Value;
+            if (choice == StandMarks.Off)
+            {
+                return null;
+            }
+            if (choice == StandMarks.Always)
+            {
+                // Kept while Item Stand Icons' look and rule stay the same objects (asked every frame: review 2).
+                if (alwaysView == null || !ReferenceEquals(alwaysView.Look, found?.Look ?? StandLook.Default)
+                    || !ReferenceEquals(alwaysView.Rule, found?.Rule ?? StandRule.Default))
+                {
+                    alwaysView = new StandView(true, found?.Look, found?.Rule);
+                }
+                return alwaysView;
+            }
+            return found != null && found.Showing ? found : null;
+        }
+
+        // An item's thumbnail (Craft, Take, and what a station makes) carries its marks, the arrows and the armor stand's;
+        // a piece's never does.
+        private static void MarkStands(StandView view)
+        {
+            standsDrawnOnce = true;
+            standLookDrawn = view?.Look;
+            standRuleDrawn = view?.Rule;
+            foreach (CellView cell in Cells)
+            {
+                Fit fit = view != null ? FitOf(cell.Entry, view.Rule) : Fit.None;
+                StandBadge.Show(cell.Root, StandMark, fit & Fit.Both, view?.Look, CellSize);
+                StandBadge.Show(cell.Root, ArmorMark, fit & Fit.Armor, view?.Look, CellSize);
             }
         }
     }

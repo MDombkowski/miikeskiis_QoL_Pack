@@ -1,5 +1,88 @@
 # Changelog
 
+## 0.5.0 (2026-10-09)
+
+- **Leave one, and gear** (card A83, miikeskii's feedback of 2026-10-09): "Leave one of each item in chests" says what it always did: it keeps back only things that stack, never your only helmet. A new setting, **Leave one of gear too** (off), keeps one of each piece of gear back as well.
+- **True counts** (card A83): a switch on the Take tab (and a setting) shows every item's whole count, the one kept back in each chest included, everywhere in the window. A fetch that would then take the last one of something from a chest asks first: **Take it anyway** (emptying as few chests as it can), **Take all but one**, or **Cancel**.
+- **The open key is read strictly**: K no longer opens the cart while Ctrl, Alt or the Windows key is held, so another mod's Left Alt + K doesn't open it too. Shift still works, so it opens while you sprint.
+- Fixed: "Fetching..." could stay up after a fetch that finished at once; the "Add all available?" question no longer comes back after closing the window with K; F no longer jumps to the filter behind a question.
+- The chest service and the catalogue it carries changed: a friend's marked chest whose owner keeps other players' mods out is left alone, the Obliterator is never a chest (StoreStash 0.7.0); quick picks (nothing changes here).
+
+## 0.4.10 (2026-10-08)
+
+- **Skarif's Valheim Performance Overhaul no longer leaves chests stuck** (card A69, miikeskii's report of 2026-10-08: building from chests 50 to 60 m away kept failing on his friend's server, and much less with Skarif's mod off). That mod makes your game send its updates to the server nearest first, every time, so in a busy base the news that a chest changed hands could wait for minutes, and your game and the server each thought the other had it. The chest service now switches off just that part of Skarif's mod while the game runs: a new section in F1, **Performance mods (every mod)**, with **Skarif's mod: send in the game's own order** (on). Nothing changes without Skarif's mod.
+- **Each item says how far its own chest is:** "Getting Wood (54 m) and Stone (56 m) from chests: place it again in a moment." (miikeskii's format), instead of one distance for them all. A fetch that came up short names each item so.
+- **"Beyond the server's reach" only when it is:** a chest your game claimed itself because the server hadn't handed it over (55 m away) was called beyond the server's reach.
+
+## 0.4.9 (2026-10-08)
+
+- **One place for the chest settings every chest mod must agree on** (card A69): a new section in F1, **Chests (every mod)**, holds the chest range (up to 250 m now, 150 out of the box), **Chests beyond the server's reach** (now **on** out of the box, one switch for Add to Cart, Craft from Chests, StoreStash and Outfitter instead of four) and **Write chest problems to the log** (on). This mod's own "Chest range" is 0 out of the box, which follows the shared one; set it to give this mod a range of its own. A settings file still at the old 150 moves to 0 once.
+- **Honest messages:** when the chests can't give something, it says which item, how far its chest is and why (another player's game has it, the server hasn't handed it over yet, it's beyond the server's reach, or your game can't get it at all), and with the log setting on, writes each chest and its situation to the log. A fetch that came up short names the item and its chest.
+- **The chest service it carries changed** (card A69): a chest your game can't get at all is left out instead of being asked for and timing out; Far Fetched on the server (card A70, a separate server mod) is recognised, and chests it hands you are used at once; a far chest is never claimed where the server would hand it out itself.
+
+## 0.4.8 (2026-10-06)
+
+- **miikeskii's own settings are the defaults now** (card A63): "Take only what I'm short" off (a fetch takes the full amounts), the opacity of thumbnails the chests can't cover 0.075 (was 0.1), and "Locate: opening one chest clears every label" on.
+- An older settings file moves to the new defaults once, only where it still holds the old default: a setting changed by hand stays as it is (the kit's new `ModuleSettings.MovedDefault`, remembered in a hidden setting, `DefaultsMoved`). The log names what moved.
+- **Chests beyond the server's hand-out work now** (card A64): on a server, the game hands a chest only to a player within about 64 to 96 m of it, so a chest loaded farther out with nobody near it never answered ("owners didn't answer in time"). The chest service it carries now claims such a chest itself, as the game's own portals do: only one no game can answer for (nobody's, its owner gone from the game, or a dedicated server's far from the world's centre), never a cart's or a ship's; it changes it only once the server's newest copy has come in and between the server's two-second rounds, so such a chest can take a second or two longer than a near one, and it lets it go again right after. It is **off out of the box**: switch on the new setting "Chests beyond the server's reach" to use it (on your own server first). Alone or hosting, and within your own area, nothing changes; on a very slow connection such chests are left out, as before. One rare case stays, written in the chest service: with ServersideQoL on the server, that mod writing the same far chest in the instant your change is late reaching the server could copy or lose that one change. Nothing depends on a performance mod: with or without Skarif's ValheimPerformanceOverhaul (which never touches chests) it works the same.
+
+## 0.4.7 (2026-10-05)
+
+- **The chest service it carries changed** (with StoreStash 0.5.0's "Which chest first", card A41; Craft from Chests 0.3.4 and Reserve Stock 0.1.6 carry it too): a quick stack that asks orders the chests that may take an item by a list of rules (chests set up for it, the most specific setup, the one holding the most of it, personal chests), each rule's first chest filling before the next, and a set-up chest's room goes to what its setup takes before what it merely holds. Add to Cart doesn't quick stack, and its taking is unchanged.
+
+## 0.4.6 (2026-09-30)
+
+- **Item stand filter** (a setting, off out of the box; miikeskii's ask after his test of Item Stand Icons 0.1.0, "browse all standable items together in one filter or tab"): on Craft and Take, the list on the left gains a heading, Fits a Stand, with a row for everything that fits a stand, then the wall item stand, the flat one and the armor stand, each of those three with its mark; a row is picked like any other, the line above the results says what's shown, and Show All × or typing in the filter goes back to everything. A filter rather than a fourth tab: each tab is what a click puts in the cart (a piece, a recipe, an item to take), and standable things are recipes on Craft and items on Take. By Item Stand Icons' rule when it's installed, else the game's own.
+- **The armor stand's mannequin** on the thumbnails of items the armor stand takes, beside the item stand arrows, with "Item stand marks" as before (the item stands part's 0.2.0, with Item Stand Icons 0.2.0).
+
+## 0.4.5 (2026-09-30)
+
+- **The chest service it carries changed** (with StoreStash 0.4.0's chest setups, card A41; Craft from Chests 0.3.3 and Reserve Stock 0.1.5 carry it too): a chest can carry a setup, and a quick stack that asks follows it, set-up chests first; a chest reserved while a quick stack's claim waited gets that stack another round without it. Add to Cart doesn't quick stack, and its taking is unchanged. Its catalogue part gains setups (`ItemPicks`), which it doesn't use.
+
+## 0.4.4 (2026-09-30)
+
+- **The chest service it carries changed** (with StoreStash 0.2.0's personal chests, card A43; Craft from Chests 0.3.2 and Reserve Stock 0.1.4 carry it too): it knows the "mine" mark a player can set on a chest, and a quick stack can leave chests someone else marked alone. Add to Cart doesn't quick stack, and its taking is unchanged.
+
+## 0.4.3 (2026-09-30)
+
+- **Item stand marks on the thumbnails** (card A51): an item that fits an item stand carries a small mark on its thumbnail, in the middle of its left edge, as the new Item Stand Icons draws on item icons: an up arrow for the wall stand, a right arrow for the flat one, both arrows for both. On the Craft and Take tabs and what a station makes; never on a piece.
+- **A new setting, "Item stand marks":** AsItemStandIcons (the default) shows them whenever Item Stand Icons shows its marks, in its look and by its rule, so nothing changes until its "Show the marks" is on; Always shows them whatever Item Stand Icons does (in a plain look without it); Off never.
+- The rule, the arrows and the mark come from a part the pack shares, `QoLMods\parts\ItemStands`, which Add to Cart now carries in its own `parts\` folder.
+
+## 0.4.2 (2026-09-30)
+
+- **The chest service it carries changed** (with StoreStash 0.1.0, the pack's own quick stack, which uses it; Craft from Chests 0.3.1 and Reserve Stock 0.1.3 carry it too): it can now put into chests and move items between them, as safely as it takes (a chest asked of its owner first, added to before anything leaves, sent and held after), and it holds the quick stack itself. Add to Cart itself is unchanged: Fetch and the counts work exactly as before.
+
+## 0.4.1 (2026-09-30)
+
+- **Comfort, as Comfort Build shows it:** a comfort piece's hover now reads "Comfort 2 (Chairs)" (was "comfort 2, in the chair group"), and a piece with no group "Comfort 1 (each kind counts once)". The number in the thumbnail's top-left corner, light blue, is where and how Comfort Build shows it in the build menu too, so it stays.
+- **Its grey copies of pictures** (for thumbnails the chests can't cover) now come from a part the pack shares, `QoLMods\parts\Pictures`, since Comfort Build greys pictures the same way; they look and work as before. In miikeskii's QoL Pack, the pictures are redrawn as soon as a grey copy is made, whichever mod made it.
+
+## 0.4.0 (2026-09-29)
+
+- **Fetch takes from a chest a friend has open too, when their game runs miikeskii's QoL Pack** (0.10.0 or later; any of Craft from Chests, Add to Cart or Reserve Stock will do). Your game asks theirs for what you're short; their game takes it out of the real chest, so their open window shows it leave at once, and it lands in your inventory like the rest of the fetch. Only what fits in your inventory is asked for. The counts (the cart's "from chests", the Take tab) include such a chest, and follow what your friend moves in or out of it within a second. **A friend without the pack, or with an older one, keeps their open chest to themselves, as before.**
+- The line after a fetch says how many of the chests were a friend's open chest, and if anything didn't fit in your inventory by the time it came (it's dropped at your feet, with a word; this shouldn't happen, since only what fits is asked for).
+- If a friend's game doesn't answer within 4 seconds, the fetch goes on without that chest; if the items still come, they land in your inventory, with a word. The rare cases: a player whose game crashes or leaves in the instant between the take and its arrival loses what was on its way; and if your friend's game crashes in the instant right after its take, their chest may still hold what you received.
+- **Your own open chests** are shared the same way with friends who fetch from them. The stack you're dragging or splitting is left alone. While every chest mod of the pack is switched off, nothing is shared, and your friends' games are told.
+- **The chest service:** if another mod moves a stack out of a chest in the middle of a take (re-sorting the chest as your inventory changes), what had arrived goes back out of your inventory, so nothing is copied (older than this version).
+- The Take tab's reason for a chest someone has open now reads "someone else has the chest open, and their game doesn't share it".
+- **With MultiUserChest installed:** a chest someone has open is skipped after a second and a half instead of after 5 seconds, and the three seconds after a fetch, during which a friend's E on that chest waits, still hold.
+
+## 0.3.6 (2026-09-28)
+
+- **The chest service it carries changed** (with Craft from Chests and the new Reserve Stock, which share it): a chest reserved with Reserve Stock after a fetch planned it gives nothing when the take comes, and "(and N in reserved chests)" counts what reserved chests hold whole, without "leave one" taken off. Nothing else changes for Add to Cart.
+- **The chest service:** renaming a chest with MyLittleUI (Shift + E) while the pack is taking from it no longer opens the chest's window under the rename box (its check now runs after MyLittleUI's).
+
+## 0.3.5 (2026-09-28)
+
+- **The chest service it carries was fixed** (with Craft from Chests, which shares it): on a server that sorts chests or feeds stations from them (the server mod ServersideQoL does both, asking for each chest the way a player's E key does), a chest just fetched from was left out of the counts for up to five seconds, as if a player were about to open it. Now only a player standing at the chest makes it drop out of the counts; the server's request still waits for the few seconds after a take, as every other computer's does.
+
+## 0.3.4 (2026-09-27)
+
+- **The chest service it carries changed** (with Craft from Chests, which shares it): for three seconds after a fetch takes from a chest, a friend's press of E on that chest does nothing, and his next press opens it, where he used to be told it was in use. It still keeps him from seeing, and saving back, his copy from before the fetch. A chest he has pressed E on meanwhile is left out of fetches until two seconds after, so his next press gets it.
+- The Take tab's reasons gain one: a chest "about to be opened by another player".
+- If another mod fails in the middle of a fetch, the chests already taken from are still sent to your friends and held.
+
 ## 0.3.3 (2026-09-27)
 
 - **Thumbnails the chests can't cover fade to 0.1 by default** (was 0.3), miikeskii's call. A settings file that has the setting already keeps its value.
@@ -77,4 +160,3 @@ drumcowski's eight points on 0.1.1:
 - Fetch takes only what you're short (a setting) from the chests within 150 m (a setting) that you could open by hand (or only those you built, a setting), leaving one of each item in each chest as AzuCraftyBoxes does (a setting).
 - Each chest is asked from its owner with the game's own open request before anything is taken; a chest a friend has open is skipped.
 - Uses the chest service shared by the bundle's mods (`parts\Chests`), in its first version.
-- Not yet tested in game.
