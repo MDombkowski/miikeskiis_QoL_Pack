@@ -887,14 +887,7 @@ namespace QoLMods.Chests
             }
         }
 
-        private static void TellHim(string text)
-        {
-            Player player = Player.m_localPlayer;
-            if (player != null)   // Unity's own null test
-            {
-                player.Message(MessageHud.MessageType.TopLeft, text);
-            }
-        }
+        private static void TellHim(string text) => QoLMods.Kit.Say.TopLeft(text);   // fitted to the screen (card B14)
 
         // A fault that loses nothing: logged once for each kind.
         private static void Fault(string what, Exception error)

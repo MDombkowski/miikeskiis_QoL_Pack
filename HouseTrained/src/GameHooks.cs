@@ -46,6 +46,11 @@ namespace HouseTrained
         internal static MethodInfo GetPatrolPoint { get; private set; }
         internal static MethodInfo TameableUseItem { get; private set; }
         internal static MethodInfo SadleUseItem { get; private set; }
+        internal static MethodInfo TameableInteract { get; private set; }
+        internal static MethodInfo TameableHover { get; private set; }
+        internal static MethodInfo SadleInteract { get; private set; }
+        internal static MethodInfo SadleHover { get; private set; }
+        internal static MethodInfo TameableRpcCommand { get; private set; }
 
         // Private members.
         internal static AccessTools.FieldRef<WearNTear, ZNetView> PieceView;
@@ -70,6 +75,19 @@ namespace HouseTrained
         internal static Action<BaseAI, ZDOID> SetTargetInfo;
         internal static Action<BaseAI, bool> SetAlerted;
         internal static Func<Pathfinding, Pathfinding.AgentType, int> AgentId;
+
+        // With the Hoarstone (card B26): a tame's walk home, its edge while following, and its hunt on the ground.
+        internal static MethodInfo Follow { get; private set; }
+        internal static Func<BaseAI, float, Vector3, float, bool, bool> MoveTo;
+        internal static AccessTools.FieldRef<MonsterAI, Vector3> LastKnownTargetPos;
+        internal static AccessTools.FieldRef<MonsterAI, bool> BeenAtLastPos;
+        internal static AccessTools.FieldRef<MonsterAI, float> TimeSinceSensed;
+        internal static AccessTools.FieldRef<MonsterAI, float> TimeSinceAttacking;
+        internal static AccessTools.FieldRef<MonsterAI, StaticTarget> TargetStatic;
+        internal static Action<BaseAI, ZDOID> GroundTargetInfo;
+        internal static Action<BaseAI, bool> GroundAlerted;
+        internal static AccessTools.FieldRef<MonsterAI, Character> GroundTargetCreature;
+        internal static AccessTools.FieldRef<BaseAI, float> GroundTimeSinceHurt;
 
         internal static void Resolve(List<string> missingOptional)
         {
@@ -141,9 +159,43 @@ namespace HouseTrained
             // Aiming at a saddled creature's saddle hovers the saddle, whose own UseItem takes nothing (code review m6).
             SadleUseItem = Method(typeof(Sadle), "UseItem", AnyInstance, new[] { typeof(Humanoid), item }, Feature.FeedSaddle, missingOptional);
 
+            // Following (card B25) and "Return to base" (card B26): E on a tame and on its saddle, and their hover texts.
+            TameableInteract = Method(typeof(Tameable), "Interact", AnyInstance, new[] { typeof(Humanoid), typeof(bool), typeof(bool) }, Feature.TameInteract, missingOptional);
+            TameableHover = Method(typeof(Tameable), "GetHoverText", AnyInstance, Type.EmptyTypes, Feature.TameHover, missingOptional);
+            SadleInteract = Method(typeof(Sadle), "Interact", AnyInstance, new[] { typeof(Humanoid), typeof(bool), typeof(bool) }, Feature.SaddleInteract, missingOptional);
+            SadleHover = Method(typeof(Sadle), "GetHoverText", AnyInstance, Type.EmptyTypes, Feature.SaddleHover, missingOptional);
+            TameableRpcCommand = Method(typeof(Tameable), "RPC_Command", AnyInstance, new[] { typeof(long), typeof(ZDOID), typeof(bool) }, Feature.TameStayMark, missingOptional);
+
+            // With the Hoarstone (card B26), each of its three patches with its own members, so one lost leaves the others.
+            MoveTo = Delegate<Func<BaseAI, float, Vector3, float, bool, bool>>(typeof(BaseAI), "MoveTo", AnyInstance,
+                new[] { typeof(float), typeof(Vector3), typeof(float), typeof(bool) }, Feature.GroundIdle, missingOptional);
+            if (MoveTo == null)
+            {
+                Broken.Missing(Feature.GroundFollow);
+            }
+            Follow = Method(typeof(BaseAI), "Follow", AnyInstance, new[] { typeof(GameObject), typeof(float) }, Feature.GroundFollow, missingOptional);
+            GroundTargetCreature = Field<MonsterAI, Character>("m_targetCreature", Feature.GroundTarget, missingOptional);
+            LastKnownTargetPos = Field<MonsterAI, Vector3>("m_lastKnownTargetPos", Feature.GroundTarget, missingOptional);
+            BeenAtLastPos = Field<MonsterAI, bool>("m_beenAtLastPos", Feature.GroundTarget, missingOptional);
+            TimeSinceSensed = Field<MonsterAI, float>("m_timeSinceSensedTargetCreature", Feature.GroundTarget, missingOptional);
+            TimeSinceAttacking = Field<MonsterAI, float>("m_timeSinceAttacking", Feature.GroundTarget, missingOptional);
+            TargetStatic = Field<MonsterAI, StaticTarget>("m_targetStatic", Feature.GroundTarget, missingOptional);
+            GroundTimeSinceHurt = Field<BaseAI, float>("m_timeSinceHurt", Feature.GroundTarget, missingOptional);
+            GroundTargetInfo = Delegate<Action<BaseAI, ZDOID>>(typeof(BaseAI), "SetTargetInfo", AnyInstance, new[] { typeof(ZDOID) }, Feature.GroundTarget, missingOptional);
+            GroundAlerted = Delegate<Action<BaseAI, bool>>(typeof(BaseAI), "SetAlerted", AnyInstance, new[] { typeof(bool) }, Feature.GroundTarget, missingOptional);
+            if (UpdateTarget == null)
+            {
+                Broken.Missing(Feature.GroundTarget);
+            }
+            if (IdleMovement == null || WanderTarget == null || WanderTimer == null || WanderReached == null || PatrolPointOf == null)
+            {
+                Broken.Missing(Feature.GroundIdle);
+            }
+
             if (AiCharacter == null)
             {
-                foreach (Feature needs in new[] { Feature.PensWander, Feature.PensFindEnemy, Feature.PensLetGo, Feature.PensAttack, Feature.PensFarHome, Feature.FightBackHurt })
+                foreach (Feature needs in new[] { Feature.PensWander, Feature.PensFindEnemy, Feature.PensLetGo, Feature.PensAttack, Feature.PensFarHome, Feature.FightBackHurt,
+                                                  Feature.GroundIdle, Feature.GroundTarget, Feature.GroundFollow })
                 {
                     Broken.Missing(needs);
                 }

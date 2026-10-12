@@ -864,7 +864,7 @@ namespace PortionControl
             }
             if (made < wanted)
             {
-                player.Message(MessageHud.MessageType.Center, "$msg_noroom");
+                QoLMods.Kit.Say.Center("$msg_noroom");
                 Module.Log.LogInfo($"Split {stack.m_shared.m_name} into {made} of {wanted} new stacks of {amount}: the rest had no " +
                                    "room, and stays where it was.");
             }

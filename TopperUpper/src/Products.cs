@@ -26,9 +26,9 @@ namespace TopperUpper
         /// (Smelter.m_spawnStack); "Empty the windmill early" lets it out sooner.</summary>
         internal static void Look(Fed fed, float now)
         {
-            if (!Settings.FeedStations.Value || Rivals.Any || !fed.Mine || !Stations.Feedable(fed) || !Stations.IsFed(fed))
+            if (!Settings.FeedStations.Value || Rivals.Any || !fed.Mine || !Stations.Feedable(fed) || !Stations.IsFed(fed) || CatchUps.Pending(fed))
             {
-                return;
+                return;   // a station about to catch up (card A93) is tapped and emptied by the catch-up first
             }
             ZDO zdo = fed.Zdo;
             switch (fed.Component)
@@ -121,7 +121,7 @@ namespace TopperUpper
                     List<ItemDrop> rest = drops.Where(drop => drop != null && GroundPut.Ours(drop, drop.GetComponent<ZNetView>()) && drop.m_itemData.m_stack > 0).ToList();
                     if (rest.Count > 0)
                     {
-                        ChestRules near = Settings.Rules(Settings.StationRadius.Value);
+                        ChestRules near = Settings.Rules(Settings.StationOutputReach);   // card B30: the output's own radius
                         nearby = nearby ?? ChestFinder.Find(fed.Position, near).Where(chest => !outputs.Contains(chest)).ToList();
                         StackRules rules = Stow.Rules(near, Settings.OnlyWhereHeld.Value, Settings.FollowSetups.Value, Settings.LeaveOthersMarked.Value);
                         Merge(moved, Stow.Items(rest, nearby, rules));
@@ -204,10 +204,10 @@ namespace TopperUpper
             switch (Settings.Say.Value)
             {
                 case SayAdded.TopLeft:
-                    MessageHud.instance?.ShowMessage(MessageHud.MessageType.TopLeft, text);
+                    QoLMods.Kit.Say.TopLeft(text, log: true);
                     break;
                 case SayAdded.Centre:
-                    MessageHud.instance?.ShowMessage(MessageHud.MessageType.Center, text);
+                    QoLMods.Kit.Say.Center(text);
                     break;
             }
             if (Settings.LogFeeds.Value)

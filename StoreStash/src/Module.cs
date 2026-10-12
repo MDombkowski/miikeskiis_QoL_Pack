@@ -40,7 +40,7 @@ namespace StoreStash
 
         internal const string Name = "StoreStash";
 
-        internal const string Version = "0.7.0";
+        internal const string Version = "0.7.3";
 
         /// <summary>HexQuickStackStorage's plugin ID. With it running, this module stays off: two quick stacks on one key,
         /// and two replacements of Place stacks, would fight over the same items. The bundle and the single release list it
@@ -88,7 +88,7 @@ namespace StoreStash
         /// setting (card A69), and its range is what it asks of Far Fetched on the server (card A70).</summary>
         internal static readonly ChestUser Chests = new ChestUser(Name, () => Log, Guard, () => IsOn,
             reach: () => Settings.Range == null ? 0f : System.Math.Max(ChestSettings.RangeOf(Settings.Range),
-                OverflowSettings.Range != null ? OverflowSettings.Range.Value : 0f));
+                OverflowSettings.Range != null && !ChestSettings.ForEveryModOn ? OverflowSettings.Range.Value : 0f));
 
         internal override string UpdateTask => "doing its work each frame (its keys, buttons and marks, sorting, the trash can, tidying)";
 

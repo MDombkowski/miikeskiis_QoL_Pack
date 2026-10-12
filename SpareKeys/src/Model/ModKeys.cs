@@ -185,6 +185,17 @@ namespace SpareKeys
             K("Use Case", "Key", overItem, "held", held: true, altKey: "When", altValue: "ToggledByKey", altPlace: notTyping);
             K("Use Case", "PinKey", notTyping);
             K("Use Case", "IgnoreKey", overItem, "while its panel shows");
+            // Job 46's keys (68-B, 2026-10-11, card B25 and B26): at a tame or its saddle; the game's E there (pet, follow,
+            // ride) is skipped while each is held (House Trained's InteractPatch and SaddleInteractPatch). The saddle's key
+            // is None out of the box; "Return to base" works only while its switch is on, on a tame off a Hoarstone's
+            // ground.
+            K("House Trained", "FollowSaddleKey", Place.Aim("a tame"), "at a saddle", overGame: true);
+            K("House Trained", "GroundReturnKey", Place.Aim("a tame"), "on a tame off a Hoarstone's ground", overGame: true,
+              onlyWhenKey: "GroundReturn", onlyWhenValue: "true");
+            // Job 45's key (69-B, 2026-10-11, card B24): Nap Time's second key, read as the player lies down on their own
+            // bed (Bed.Interact, the game's E there): it picks a nap or the game's sleep for that lie-down, and the game's E
+            // still lies them down, so the two are one press on purpose.
+            K("Nap Time", "NapKey", Place.Aim("a bed"), "at your own bed, by day, to pick a nap", overGame: true);
         }
 
         /// <summary>

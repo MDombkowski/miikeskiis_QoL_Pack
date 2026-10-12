@@ -24,6 +24,22 @@ namespace CraftFromChests
         internal static FieldInfo CraftUpgradeItem;
         internal static FieldInfo MultiCrafting;
 
+        // Crafting an amount (card B16): the recipe picked in the menu (a private struct, read through its two
+        // properties), its variant, the variant being crafted, and the Craft button's own handler, pressed for each craft.
+        internal static FieldInfo SelectedRecipe;
+        internal static PropertyInfo SelectedRecipeRecipe;
+        internal static PropertyInfo SelectedRecipeItem;
+        internal static FieldInfo SelectedVariant;
+        internal static FieldInfo CraftVariant;
+        internal static MethodInfo CraftPressed;
+
+        /// <summary>InventoryGui.m_touchMultiCrafting (a touch screen's long press: the game's x5), cleared for a run's
+        /// press; without it, nothing to clear.</summary>
+        internal static FieldInfo TouchMultiCrafting;
+
+        /// <summary>Whether crafting an amount can run: every member above was found.</summary>
+        internal static bool Batches;
+
         // Each station's network view, and what it knows about itself
         internal static FieldInfo SmelterView;
         internal static MethodInfo SmelterQueueSize;
@@ -62,6 +78,29 @@ namespace CraftFromChests
             if (optional.Count > 0)
             {
                 missingOptional.Add($"showing pieces that need a station in the build menu's \"have some\" list ({string.Join(", ", optional)} not found)");
+            }
+
+            var batches = new List<string>();
+            SelectedRecipe = typeof(InventoryGui).GetField("m_selectedRecipe", AnyInstance);
+            SelectedRecipeRecipe = SelectedRecipe?.FieldType.GetProperty("Recipe", AnyInstance);
+            SelectedRecipeItem = SelectedRecipe?.FieldType.GetProperty("ItemData", AnyInstance);
+            if (SelectedRecipeRecipe == null || SelectedRecipeRecipe.PropertyType != typeof(Recipe) ||
+                SelectedRecipeItem == null || SelectedRecipeItem.PropertyType != typeof(ItemDrop.ItemData))
+            {
+                batches.Add("InventoryGui.m_selectedRecipe");
+            }
+            SelectedVariant = Field(typeof(InventoryGui), "m_selectedVariant", typeof(int), batches);
+            CraftVariant = Field(typeof(InventoryGui), "m_craftVariant", typeof(int), batches);
+            CraftPressed = Method(typeof(InventoryGui), "OnCraftPressed", typeof(void), Type.EmptyTypes, batches);
+            Batches = batches.Count == 0;
+            TouchMultiCrafting = typeof(InventoryGui).GetField("m_touchMultiCrafting", AnyInstance);
+            if (TouchMultiCrafting != null && TouchMultiCrafting.FieldType != typeof(bool))
+            {
+                TouchMultiCrafting = null;
+            }
+            if (!Batches)
+            {
+                missingOptional.Add($"crafting an amount (the game has changed: {string.Join(", ", batches)} not found)");
             }
 
             Smelters = Station("smelters, kilns and the like", missingOptional, found =>

@@ -19,7 +19,7 @@ namespace XPortalMapPicker
 
         internal const string Name = "XPortal Map Picker";
 
-        internal const string Version = "0.6.2";
+        internal const string Version = "0.6.3";
 
         private static Module current;
 

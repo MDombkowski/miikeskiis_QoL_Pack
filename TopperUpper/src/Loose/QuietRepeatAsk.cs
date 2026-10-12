@@ -144,14 +144,12 @@ namespace TopperUpper.Loose
             if (log)
             {
                 Module.Log.LogInfo("The server asked your game for an item on the ground that your game looks after: a mod on the " +
-                                   "server still picks up loose items (ServersideQoL's AutoStore, most likely). Ask its owner to set " +
-                                   "AutoPickup = false in [AutoStore] of BepInEx\\config\\ArgusMagnus.ServersideQoL.AutoStore.cfg. Until " +
-                                   "then it takes loose items first, asking for each, as before.");
+                                   "server picks up loose items itself, asking for each one. Until it's switched off on the server, " +
+                                   "it takes loose items before Topper-Upper does.");
             }
             if (screen)
             {
-                MessageHud.instance?.ShowMessage(MessageHud.MessageType.Center,
-                    "Topper-Upper: the server's own pickup is still on (ServersideQoL's AutoStore).\nAsk for AutoPickup = false; until then it takes loose items first.");
+                QoLMods.Kit.Say.Center("Topper-Upper: a mod on the server picks up loose items itself.\nUntil it's switched off there, it takes them first.");
             }
         }
 

@@ -1,5 +1,7 @@
 using BepInEx.Configuration;
+using QoLMods.Catalogue;
 using QoLMods.Kit;
+using QoLMods.ListPicker;
 using UnityEngine;
 
 namespace Grounded
@@ -168,6 +170,22 @@ namespace Grounded
                 "PlanBuild plans count as their pieces", 84,
                 "On (the default): a PlanBuild plan of a rug or a floor counts as that rug or floor. Off: plans are " +
                 "like any other piece.");
+
+            // The Pick buttons in F1 (card B03): each list picked from pictures of the game's pieces, its text written as
+            // NameList reads it (split at commas, any case).
+            PickerSettings.Bind(settings);
+            Lists.Attach(Rugs, PieceList("The rugs: looked through, never landed on, and laid on the floor when in your hand.", null));
+            Lists.Attach(Floors, PieceList("The floors a rug lands on.", new Selection(Pick.Category, "Flooring")));
         }
+
+        private static ListSpec PieceList(string says, Selection? opensOn) => new ListSpec
+        {
+            Module = Module.Name,
+            Kinds = new[] { ThingKind.Pieces },
+            Format = new ListFormat { Separators = ",", Joiner = "," },
+            Says = says,
+            OpensOn = opensOn,
+            Warn = text => Module.Log?.LogWarning(text),
+        };
     }
 }

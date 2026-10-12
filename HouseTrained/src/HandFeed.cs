@@ -648,6 +648,6 @@ namespace HouseTrained
 
         private static string Shown(string kind) => Localization.instance != null ? Localization.instance.Localize(kind) : kind;
 
-        private static void Tell(Player player, string text) => player.Message(MessageHud.MessageType.Center, text);
+        private static void Tell(Player player, string text) => QoLMods.Kit.Say.Center(text);   // fitted to the screen (card B14)
     }
 }

@@ -19,7 +19,7 @@ namespace AFKRaidBlocker
 
         internal const string Name = "AFK Raid Blocker";
 
-        internal const string Version = "0.1.0";
+        internal const string Version = "0.2.0";
 
         private static Module current;
 
@@ -38,7 +38,7 @@ namespace AFKRaidBlocker
 
         internal override string EnabledDescription =>
             "Turns the mod on or off. Off: raids come to you as usual at once, whether you're away or not, and your " +
-            "away mark goes. On: the minutes start counting again from then.";
+            "away mark and AFK sign go. On: the minutes start counting again from then.";
 
         internal override string SwitchedOffNote => "Raids come as they do without the mod.";
 
@@ -59,6 +59,6 @@ namespace AFKRaidBlocker
 
         internal override void Update() => Away.Update();
 
-        internal override IEnumerable<Action> UndoSteps => new Action[] { Away.Stop };
+        internal override IEnumerable<Action> UndoSteps => new Action[] { Away.Stop, Icon.Remove };
     }
 }

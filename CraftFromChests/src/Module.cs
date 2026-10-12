@@ -24,7 +24,7 @@ namespace CraftFromChests
 
         internal const string Name = "Craft from Chests";
 
-        internal const string Version = "0.4.0";
+        internal const string Version = "0.6.0";
 
         /// <summary>Other mods that take from chests for crafting. With one of them running, this module stays off: two
         /// mods taking from the same chests at once could lose or copy items. The bundle and the single release list them
@@ -40,6 +40,10 @@ namespace CraftFromChests
 
         /// <summary>aedenthorn's CraftFromContainers' plugin ID, as AzuCraftyBoxes names it.</summary>
         internal const string CraftFromContainers = "aedenthorn.CraftFromContainers";
+
+        /// <summary>shudnal's MyLittleUI, whose Multicraft "Craft an amount" hides while it's on (OtherMulticraft). A soft
+        /// dependency, so it starts first and its Multicraft can be found when the patches go on.</summary>
+        internal const string MyLittleUI = "shudnal.MyLittleUI";
 
         // Marks a rival in the missing list, so DescribeMissing can say what to do about it.
         private const string RivalMark = "rival:";
@@ -94,6 +98,7 @@ namespace CraftFromChests
             }
             ChestHooks.Resolve(missing, Chests);
             GameHooks.Resolve(missing, missingOptional);
+            QoLMods.ListPicker.Lists.Resolve(missingOptional);
         }
 
         internal override string DescribeMissing(IList<string> missing)
@@ -117,9 +122,15 @@ namespace CraftFromChests
             Supply.Update();
             Crafting.Update();
             Building.Update();
+            Batches.Update();
         }
 
+        internal override string LateUpdateTask => "showing the amount to craft";
+
+        /// <summary>After the game drew the crafting menu: the amount beside the Craft button (card B16).</summary>
+        internal override void LateUpdate() => BatchPanel.Refresh();
+
         internal override IEnumerable<Action> UndoSteps =>
-            new Action[] { Supply.Cancel, Crafting.Reset, Building.Reset, Stations.Reset, Display.PutBackAll, ChestClaims.ReleaseHolds };
+            new Action[] { Supply.Cancel, Crafting.Reset, Batches.Reset, BatchPanel.Remove, Building.Reset, Stations.Reset, Display.PutBackAll, ChestClaims.ReleaseHolds };
     }
 }

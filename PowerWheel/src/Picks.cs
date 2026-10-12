@@ -62,10 +62,10 @@ namespace PowerWheel
             switch (Settings.Message.Value)
             {
                 case MessageChoice.Centre:
-                    player.Message(MessageHud.MessageType.Center, text);
+                    QoLMods.Kit.Say.Center(text);
                     break;
                 case MessageChoice.TopLeft:
-                    player.Message(MessageHud.MessageType.TopLeft, text, 0, icon);
+                    QoLMods.Kit.Say.To(MessageHud.MessageType.TopLeft, text, 0, icon);
                     break;
             }
         }

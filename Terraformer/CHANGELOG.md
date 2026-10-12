@@ -1,18 +1,26 @@
 # Changelog
 
+## 0.3.2 (2026-10-11)
+
+- Settings name no other mod unless this mod works with it, stands aside for it or makes room for it: four settings' descriptions ("Largest lift", "Precision raise can dig", "Lower ground needs a workbench", "Lower ground drops stone") no longer compare with another mod's tools; what each setting does is unchanged.
+
+## 0.3.1 (2026-10-11)
+
+- **Messages fit the screen**: a message line too wide for your screen is broken at spaces into lines that fit, measured by the game's own text, as every mod of miikeskii's QoL Pack now does.
+
 ## 0.3.0 (2026-10-10)
 
-Three additions at miikeskii's word of 2026-10-10 (cards A99, B01 and B02), each a part of its own in the settings.
+Three additions at miikeskii's word of 2026-10-10, each a part of its own in the settings.
 
-- **Paint only (card A99).** Hold Left Alt with Paved road or Cultivate (the game's, or Terraformer's squares of them) and the tool only paints: its paving or tilled soil lands on the ground exactly as it lies, and not one point is raised, lowered, levelled or smoothed. The grid shows only the paint, and the build bar says "paint only". A setting makes the key a toggle. Pathen, Grass and the paths already only paint.
-- **Slope, a new tool in the hoe (card B02).** It lays the ground in its area onto one even slope, shown on the grid before you click (rising points green, dropping ones orange):
+- **Paint only.** Hold Left Alt with Paved road or Cultivate (the game's, or Terraformer's squares of them) and the tool only paints: its paving or tilled soil lands on the ground exactly as it lies, and not one point is raised, lowered, levelled or smoothed. The grid shows only the paint, and the build bar says "paint only". A setting makes the key a toggle. Pathen, Grass and the paths already only paint.
+- **Slope, a new tool in the hoe.** It lays the ground in its area onto one even slope, shown on the grid before you click (rising points green, dropping ones orange):
   - High to low (out of the box): through the area's highest and lowest points, falling the way the ground there falls, so an even slope already there is left alone.
   - Closest to the ground: the even slope that moves the least earth.
   - Two clicks: the first click marks where the slope starts, the second where it ends, and a ramp as wide as the tool is laid between them.
   - Right Alt and the wheel set its edge, from a hard step (100 %) to a band that blends into the ground around. It can be set to only lower or only raise, to keep the ground's look, and to cost as Raise ground. Free and without a workbench out of the box, as Flatten.
   - A click that would change nothing ("Only raise" on ground above the slope, say) is refused with "Nothing here to slope.", costing no stamina, wear or stone.
-- **Rectangles (card B02).** Hold Right Shift and turn the wheel to make any square tool wider or narrower: "Rectangle 9 × 5 · 8 × 4 m". Right Ctrl still grows both sides; the reset key makes it a square again.
-- **The grown tree, before you plant (card B01).** Hold Left Alt while you place a sapling with the cultivator: the tree it will grow into stands there, full grown and see-through, at its facing and size. Q and E pick the birch's two shapes (the only sapling with more than one), Right Alt and the wheel the size. A sapling planted while it shows grows into exactly that tree, size and facing, PlantEasily's rows included, where the game that grows it has this version; otherwise it grows as the game picks. While the tree shows, the next sapling keeps the turn you gave it instead of the game's random one ("Keep my turn"), so a row faces one way.
+- **Rectangles.** Hold Right Shift and turn the wheel to make any square tool wider or narrower: "Rectangle 9 × 5 · 8 × 4 m". Right Ctrl still grows both sides; the reset key makes it a square again.
+- **The grown tree, before you plant.** Hold Left Alt while you place a sapling with the cultivator: the tree it will grow into stands there, full grown and see-through, at its facing and size. Q and E pick the birch's two shapes (the only sapling with more than one), Right Alt and the wheel the size. A sapling planted while it shows grows into exactly that tree, size and facing, PlantEasily's rows included, where the game that grows it has this version; otherwise it grows as the game picks. While the tree shows, the next sapling keeps the turn you gave it instead of the game's random one ("Keep my turn"), so a row faces one way.
 - **Fixed: square tools turned the wrong way** (0.2.0): at 22.5° a square lay at -22.5° beside a building at 22.5°. Squares now turn the way buildings do; at 0° and 45° nothing changes.
 - **F1:** Terraformer's settings sit under its one heading, its parts (Paint only, Slope, Grown trees, Dust) folding open and shut. "Rectangles for" and "Width key" are with the square tools' settings.
 
@@ -47,7 +55,7 @@ From miikeskii's first test of 0.1.1 ("working quite well", with fourteen points
 
 ## 0.1.0 (2026-09-30)
 
-- **First version**, as a mod of miikeskii's QoL Pack and on its own (card A20). Written from scratch to replace AdvancedTerrainModifiers, whose every tool it has; it stays off while that mod is installed.
+- **First version**, as a mod of miikeskii's QoL Pack and on its own. Written from scratch to replace AdvancedTerrainModifiers, whose every tool it has; it stays off while that mod is installed.
 - **Every round terrain tool resizes and sharpens** with Right Ctrl and Right Alt and the wheel (his AdvancedTerrainModifiers keys), the game's own included, and **each tool remembers its own radius and sharpness**, also after quitting; Right Ctrl + Z puts it back to its own.
 - **Square tools** snap to the ground's points, **turn with the wheel in 45° steps** (sharing the game's own build turn, so a square takes the angle of the building last placed; Home straightens it), resize a row of points at a time (3 × 3 by default), and show their outline on the ground.
 - **Twelve tools:** Level ground, Pathen, Paved road, Cultivate and Grass as squares; Raise ground (precision); Lower ground in the hoe (the Shovel's dig, shown once iron is found); Paved road and Cultivate as paths; Remove terrain changes.

@@ -83,6 +83,11 @@ namespace TopperUpper
                 fed.Why = "The server fed it a moment ago: left alone for a minute";
                 return false;
             }
+            if (CatchUps.Pending(fed, out bool forTheServer))
+            {
+                fed.Why = forTheServer ? "Waiting a moment for the server's settings" : "About to catch up on the time it was away";
+                return false;   // the catch-up feeds it first (card A93), in a moment
+            }
             if (NeedsRoof(fed))
             {
                 fed.Why = "It needs a roof";
@@ -145,7 +150,7 @@ namespace TopperUpper
         internal static void Feed(Fed fed)
         {
             float now = Time.time;
-            if (!fed.Alive || !Feedable(fed) || Rivals.Any || !IsFed(fed) || Owners.StandingAside(fed, now) || NeedsRoof(fed))
+            if (!fed.Alive || !Feedable(fed) || Rivals.Any || !IsFed(fed) || Owners.StandingAside(fed, now) || NeedsRoof(fed) || CatchUps.Pending(fed))
             {
                 return;
             }
@@ -210,6 +215,68 @@ namespace TopperUpper
                 }
             }
             return null;
+        }
+
+        /// <summary>What a smelter takes, in his order: the kiln only its listed woods (all, with none listed); every other
+        /// station its "takes first" line, then the rest in the game's order. An input listed twice counts once. For a feed,
+        /// and for the catch-up (card A93), so both follow the same order.</summary>
+        internal static List<Lane> InputLanes(Fed fed, Smelter smelter)
+        {
+            var conversions = new List<Smelter.ItemConversion>();
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            foreach (Smelter.ItemConversion conversion in smelter.m_conversion)
+            {
+                if (conversion?.m_from != null && conversion.m_to != null && seen.Add(conversion.m_from.gameObject.name))
+                {
+                    conversions.Add(conversion);
+                }
+            }
+            List<Smelter.ItemConversion> ordered;
+            if (fed.Prefab == Kiln && RuleLists.KilnWoods.Count > 0)
+            {
+                ordered = RuleLists.KilnWoods.Order(conversions, each => each.m_from.gameObject.name, onlyListed: true);
+            }
+            else
+            {
+                ordered = RuleLists.FirstsOf(fed.Prefab).Order(conversions, each => each.m_from.gameObject.name, onlyListed: false);
+            }
+            var lanes = new List<Lane>();
+            foreach (Smelter.ItemConversion conversion in ordered)
+            {
+                lanes.Add(new Lane
+                {
+                    Input = conversion.m_from.m_itemData.m_shared.m_name,
+                    Prefab = conversion.m_from.gameObject.name,
+                    Product = conversion.m_to.m_itemData.m_shared.m_name,
+                });
+            }
+            return lanes;
+        }
+
+        /// <summary>The mead bases a fermenter takes, in his order ("Fermenter" in "What each station takes first", then the
+        /// game's), each making its batch of meads. For a feed, and for the catch-up.</summary>
+        internal static List<Lane> FermenterLanes(Fed fed, Fermenter fermenter)
+        {
+            var conversions = new List<Fermenter.ItemConversion>();
+            foreach (Fermenter.ItemConversion conversion in fermenter.m_conversion)
+            {
+                if (conversion?.m_from != null && conversion.m_to != null)
+                {
+                    conversions.Add(conversion);
+                }
+            }
+            var lanes = new List<Lane>();
+            foreach (Fermenter.ItemConversion conversion in RuleLists.FirstsOf(fed.Prefab).Order(conversions, each => each.m_from.gameObject.name, onlyListed: false))
+            {
+                lanes.Add(new Lane
+                {
+                    Input = conversion.m_from.m_itemData.m_shared.m_name,
+                    Prefab = conversion.m_from.gameObject.name,
+                    Product = conversion.m_to.m_itemData.m_shared.m_name,
+                    ProductsPerBatch = Mathf.Max(1, conversion.m_producedItems),
+                });
+            }
+            return lanes;
         }
 
         /// <summary>A smelter's conversion for an input prefab, or null.</summary>
@@ -370,7 +437,7 @@ namespace TopperUpper
         }
 
         /// <summary>
-        /// One feed of one station, in one frame: its chests (its linked inputs, else those within its chest radius), the
+        /// One feed of one station, in one frame: its chests (its linked inputs, else those within its input radius), the
         /// count, and what was given; Finish (in the caller's finally) holds and sends every chest it took from.
         /// </summary>
         private sealed class StationFeed
@@ -410,7 +477,7 @@ namespace TopperUpper
             {
                 if (nearby == null)
                 {
-                    ChestRules rules = Settings.Rules(Settings.StationRadius.Value);
+                    ChestRules rules = Settings.Rules(Settings.StationReach);
                     nearby = new Taking(ChestFinder.Find(fed.Position, rules), rules.LeaveOne, rules.UseReserved);
                 }
                 return nearby;
@@ -505,40 +572,7 @@ namespace TopperUpper
                 Run(fuelRoom, fuelLanes, FuelFrom(fuelLanes), (grant, units) => Adds.SmelterFuel(fed, units, book));
             }
 
-            // What a smelter takes, in his order: the kiln only its listed woods (all, with none listed); every other
-            // station its "takes first" line, then the rest in the game's order. An input listed twice counts once.
-            private List<Lane> InputLanes(Smelter smelter)
-            {
-                var conversions = new List<Smelter.ItemConversion>();
-                var seen = new HashSet<string>(StringComparer.Ordinal);
-                foreach (Smelter.ItemConversion conversion in smelter.m_conversion)
-                {
-                    if (conversion?.m_from != null && conversion.m_to != null && seen.Add(conversion.m_from.gameObject.name))
-                    {
-                        conversions.Add(conversion);
-                    }
-                }
-                List<Smelter.ItemConversion> ordered;
-                if (fed.Prefab == Kiln && RuleLists.KilnWoods.Count > 0)
-                {
-                    ordered = RuleLists.KilnWoods.Order(conversions, each => each.m_from.gameObject.name, onlyListed: true);
-                }
-                else
-                {
-                    ordered = RuleLists.FirstsOf(fed.Prefab).Order(conversions, each => each.m_from.gameObject.name, onlyListed: false);
-                }
-                var lanes = new List<Lane>();
-                foreach (Smelter.ItemConversion conversion in ordered)
-                {
-                    lanes.Add(new Lane
-                    {
-                        Input = conversion.m_from.m_itemData.m_shared.m_name,
-                        Prefab = conversion.m_from.gameObject.name,
-                        Product = conversion.m_to.m_itemData.m_shared.m_name,
-                    });
-                }
-                return lanes;
-            }
+            private List<Lane> InputLanes(Smelter smelter) => Stations.InputLanes(fed, smelter);
 
             // The fermenter: one mead base when it's empty, under a roof and not out in the open, and you may use it (a ward).
             internal void Fermenter(Fermenter fermenter)
@@ -562,25 +596,7 @@ namespace TopperUpper
                     fed.Why = "Behind a ward you aren't on";
                     return;
                 }
-                var conversions = new List<Fermenter.ItemConversion>();
-                foreach (Fermenter.ItemConversion conversion in fermenter.m_conversion)
-                {
-                    if (conversion?.m_from != null && conversion.m_to != null)
-                    {
-                        conversions.Add(conversion);
-                    }
-                }
-                var lanes = new List<Lane>();
-                foreach (Fermenter.ItemConversion conversion in RuleLists.FirstsOf(fed.Prefab).Order(conversions, each => each.m_from.gameObject.name, onlyListed: false))
-                {
-                    lanes.Add(new Lane
-                    {
-                        Input = conversion.m_from.m_itemData.m_shared.m_name,
-                        Prefab = conversion.m_from.gameObject.name,
-                        Product = conversion.m_to.m_itemData.m_shared.m_name,
-                        ProductsPerBatch = Mathf.Max(1, conversion.m_producedItems),
-                    });
-                }
+                List<Lane> lanes = FermenterLanes(fed, fermenter);
                 // One base per feed (room 1): its own message, which plays its effect once and writes no log line.
                 Run(1, lanes, Inputs(), (grant, units) =>
                 {

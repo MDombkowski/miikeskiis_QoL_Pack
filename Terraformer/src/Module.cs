@@ -24,7 +24,7 @@ namespace Terraformer
 
         internal const string Name = "Terraformer";
 
-        internal const string Version = "0.3.0";
+        internal const string Version = "0.3.2";
 
         /// <summary>AdvancedTerrainModifiers' plugin ID (Searica's, kept by its forks too). With it running, Terraformer
         /// stays off: two mods changing the same terrain tools would each undo the other. The bundle and the single release

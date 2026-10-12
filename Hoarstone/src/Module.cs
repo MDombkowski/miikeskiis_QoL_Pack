@@ -22,7 +22,7 @@ namespace Hoarstone
 
         internal const string Name = "Hoarstone";
 
-        internal const string Version = "0.1.0";
+        internal const string Version = "0.2.0";
 
         private static Module current;
 
@@ -74,8 +74,12 @@ namespace Hoarstone
 
         internal override void Resolve(List<string> missing, List<string> missingOptional)
         {
+            // First, so another module asking (House Trained's tames, card B26) hears "off" rather than "not installed"
+            // whatever happens below.
+            QoLMods.HoarstoneGround.Ground.Provide(new GroundAnswers());
             GameHooks.Resolve(missing, missingOptional);
             Folds.RebuildList = ManagerLink.Rebuild();   // null with a Jötunn too old to ask
+            QoLMods.ListPicker.Lists.Resolve(missingOptional);
         }
 
         /// <summary>Every frame while the module runs, also while switched off: the fold-outs, the records and what's

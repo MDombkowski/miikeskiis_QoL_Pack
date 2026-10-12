@@ -72,6 +72,11 @@ namespace Outfitter.Equip
         /// never sent away by a later round (review round 1 of job 30, M1); null: none.</summary>
         internal ICollection<ItemDrop.ItemData> KeptEarlier;
 
+        /// <summary>What an earlier round of the same equip took off to go away (Exchange.OffToGo; card B18): unworn now, it
+        /// still goes away as the worn piece it was, so a later round routes it and the result lists it if it stays (the swap
+        /// modes put away only what he wore); null: none.</summary>
+        internal ICollection<ItemDrop.ItemData> OffToGo;
+
         /// <summary>How much of each of his stacks the routing really places in a chest (the exchange's Route); null: all
         /// the plan sends away. The fit counts the room only of what leaves (R3, finding 2).</summary>
         internal Func<ItemDrop.ItemData, int> Leaves;
@@ -930,8 +935,10 @@ namespace Outfitter.Equip
                 {
                     continue;   // taken off and kept by an earlier round (a stand's piece going home): it stays with him
                 }
+                // A piece an earlier round took off to go away goes as the worn piece it was (card B18).
+                bool wasWorn = worn || (input.OffToGo != null && input.OffToGo.Contains(item));
                 bool goes;
-                if (!worn && OfAWantedKind(input, plan, item))
+                if (!wasWorn && OfAWantedKind(input, plan, item))
                 {
                     // More of a kind the loadout holds than its count (another stack, a second copy): "More than the
                     // loadout's count" decides, in every mode (R1, finding 3).
@@ -944,10 +951,13 @@ namespace Outfitter.Equip
                 else
                 {
                     // The swap modes put away only what he wore, and never a favourite (R1, finding 2).
-                    goes = worn && Matching.IsGear(item.m_shared.m_itemType, rules) && !Protected(input, item);
+                    goes = wasWorn && Matching.IsGear(item.m_shared.m_itemType, rules) && !Protected(input, item);
                 }
                 if (!goes)
                 {
+                    // Never going away (a favourite left alone, a quick-slot item, a stand's own piece, or what a swap mode
+                    // doesn't change), it stays as it is, worn or not, whatever "What I wear that the loadout doesn't" says
+                    // (card B18, decision 2).
                     continue;
                 }
                 if (worn)
@@ -1025,6 +1035,7 @@ namespace Outfitter.Equip
             }
             var missing = new HashSet<WornAs>();
             var filled = new HashSet<WornAs>();
+            var missingHands = new List<KeyValuePair<WornAs, ItemDrop.ItemData.ItemType>>();
             foreach (Want want in plan.Wants)
             {
                 WornAs place = PlaceOf(want);
@@ -1039,17 +1050,49 @@ namespace Outfitter.Equip
                 else
                 {
                     missing.Add(place);
+                    if (want.Template != null && (place == WornAs.RightHand || place == WornAs.LeftHand))
+                    {
+                        missingHands.Add(new KeyValuePair<WornAs, ItemDrop.ItemData.ItemType>(place, want.Template.m_shared.m_itemType));
+                    }
                 }
             }
             foreach (ItemDrop.ItemData item in carried)
             {
                 WornAs now = WornNow(input, item);
-                if (now != WornAs.None && missing.Contains(now) && !filled.Contains(now) && !used.ContainsKey(item))
+                if (now == WornAs.None || filled.Contains(now) || used.ContainsKey(item))
+                {
+                    continue;
+                }
+                if (missing.Contains(now) || DisplacedByMissing(now, item.m_shared.m_itemType, missingHands))
                 {
                     kept.Add(item);
                 }
             }
             return kept;
+        }
+
+        // Whether a missing hand piece of the loadout would have taken the other hand from this item of his (the game won't
+        // hold both: a bow or a two-handed weapon empties both hands): his stays on there too, as in its own hand (card B18,
+        // decision 4: with what nothing replaces coming off, his sword would otherwise come off for a bow that can't come).
+        private static bool DisplacedByMissing(WornAs now, ItemDrop.ItemData.ItemType type, List<KeyValuePair<WornAs, ItemDrop.ItemData.ItemType>> missingHands)
+        {
+            if (now != WornAs.RightHand && now != WornAs.LeftHand)
+            {
+                return false;
+            }
+            foreach (KeyValuePair<WornAs, ItemDrop.ItemData.ItemType> hand in missingHands)
+            {
+                if (hand.Key == now)
+                {
+                    continue;   // its own hand: kept by the place itself
+                }
+                bool fits = hand.Key == WornAs.LeftHand ? Dress.Beside(type, hand.Value) : Dress.Beside(hand.Value, type);
+                if (!fits)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         // The order what comes is taken in, and room given out in: first the worn pieces that replace one of his going away

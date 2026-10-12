@@ -3,6 +3,7 @@ using System.Linq;
 using BepInEx.Configuration;
 using QoLMods.Chests;
 using QoLMods.Kit;
+using QoLMods.ListPicker;
 using UnityEngine;
 
 namespace CraftFromChests
@@ -25,7 +26,7 @@ namespace CraftFromChests
 
     /// <summary>
     /// The player's settings. Alone, the mod keeps them in BepInEx\config\modprojects.craftfromchests.cfg, in the sections
-    /// General, Crafting and Stations; inside miikeskii's QoL Pack, in the bundle's file, in the section "Craft from
+    /// General, Crafting, Stations and Batches (crafting an amount, since 0.5.0); inside miikeskii's QoL Pack, in the bundle's file, in the section "Craft from
     /// Chests". Every one takes effect at once: the mod reads them each time it counts or takes. The defaults are his
     /// AzuCraftyBoxes settings of 2026-09-27 (150 m, leave one, Left Shift to fill, Left Alt + O to switch) and its default
     /// rules file (personal chests left out, the kiln taking only Wood).
@@ -76,6 +77,29 @@ namespace CraftFromChests
 
         internal static ConfigEntry<bool> StationHint { get; private set; }
 
+        // Crafting an amount (card B16, and B17's label)
+        internal static ConfigEntry<bool> Batches { get; private set; }
+
+        internal static ConfigEntry<bool> BatchesOfFive { get; private set; }
+
+        internal static ConfigEntry<bool> SkillWhole { get; private set; }
+
+        internal static ConfigEntry<bool> WholeAmount { get; private set; }
+
+        internal static ConfigEntry<int> MostAmount { get; private set; }
+
+        internal static ConfigEntry<KeyboardShortcut> StepFiveKey { get; private set; }
+
+        internal static ConfigEntry<bool> StepsOnFives { get; private set; }
+
+        internal static ConfigEntry<KeyboardShortcut> MostKey { get; private set; }
+
+        internal static ConfigEntry<bool> KeepAmount { get; private set; }
+
+        internal static ConfigEntry<bool> HideMyLittleUI { get; private set; }
+
+        internal static ConfigEntry<bool> StopMessage { get; private set; }
+
         internal static void Bind(ModuleSettings settings)
         {
             // The host has bound Enabled, first in General. A configuration manager lists the settings in a section by
@@ -88,8 +112,8 @@ namespace CraftFromChests
 
             ToggleKey = settings.Bind(ModuleSettings.General, "ToggleKey", new KeyboardShortcut(KeyCode.O, KeyCode.LeftAlt),
                 "Key to switch it on and off", 40,
-                "Switches the mod on and off (the Enabled setting above) and says which, as AzuCraftyBoxes' Left Alt + O " +
-                "did. Off, everything uses only what you carry.");
+                "Switches the mod on and off (the Enabled setting above) and says which. Off, everything uses only what " +
+                "you carry.");
 
             // Since card A69 (2026-10-08): 0 follows the shared range ("Chests (every mod)"), the default now; a file still
             // at the old default, 150, moves to it once (ChestSettings).
@@ -99,6 +123,8 @@ namespace CraftFromChests
                 ChestSettings.OwnRangeNote,
                 new AcceptableValueRange<float>(0f, ChestSettings.MostRange));
             settings.MovedDefault(Range, ChestSettings.DefaultRange, 2);
+            // The list in "Chests (every mod)" (card B13): this is the one that governs building from chests.
+            ChestSettings.Reaches("Craft from Chests (crafting, building, filling stations)", "Chest range (metres)", Range);
 
             Chests = settings.Bind(ModuleSettings.General, "Chests", WhichChests.AnyChestICanOpen,
                 "Which chests", 38,
@@ -108,17 +134,15 @@ namespace CraftFromChests
 
             LeaveOne = settings.Bind(ModuleSettings.General, "LeaveOne", true,
                 "Leave one of each item in chests", 37,
-                "Leaves one of each item in every chest, so quick stack still knows which chest it belongs in, as " +
-                "AzuCraftyBoxes' \"Leave One Item\" did. Only for items that stack: a lone sword or piece of armour can " +
-                "still be used.");
+                "Leaves one of each item in every chest, so quick stack still knows which chest it belongs in. Only for " +
+                "items that stack: a lone sword or piece of armour can still be used.");
 
             // On out of the box since card A63 (2026-10-06, his own settings made the pack's defaults); a file still at the
             // old default moves once (the kit's MovedDefault).
             PersonalChests = settings.Bind(ModuleSettings.General, "PersonalChests", true,
                 "Use my personal chests", 36,
-                "On (the default): your own personal chests are used like any other chest. Off: they're left alone, as " +
-                "AzuCraftyBoxes' default rules did, so they can keep what you don't want used. Other players' personal " +
-                "chests are never used.");
+                "On (the default): your own personal chests are used like any other chest. Off: they're left alone, so " +
+                "they can keep what you don't want used. Other players' personal chests are never used.");
             settings.MovedDefault(PersonalChests, false, 1);
 
             Reserved = settings.Bind(ModuleSettings.General, "ReservedChests", ReservedChests.LeftOutWithLock,
@@ -160,8 +184,8 @@ namespace CraftFromChests
 
             FromChestsColor = settings.Bind(Crafting, "FromChestsColor", new Color(1f, 0.922f, 0.016f, 1f),
                 "Colour when chests make up the rest", 26,
-                "An amount you'd be short of without the chests flashes between this colour and white, as " +
-                "AzuCraftyBoxes' amounts did. Short even with the chests, it flashes red, as the game's own does.");
+                "An amount you'd be short of without the chests flashes between this colour and white. Short even with " +
+                "the chests, it flashes red, as the game's own does.");
 
             ShowBuildCount = settings.Bind(Crafting, "ShowBuildCount", true,
                 "Show how many you can build", 25,
@@ -191,14 +215,97 @@ namespace CraftFromChests
             KilnTakes = settings.Bind(Stations, "KilnTakes", "Wood",
                 "What the charcoal kiln takes from chests", 18,
                 "The woods the charcoal kiln may take from chests, and be filled with, by their prefab names, separated by " +
-                "commas. Wood alone by default, as in AzuCraftyBoxes' default rules, so Fine wood, Core wood and the rest " +
-                "are kept for building. Empty: every wood it burns. Pressing E with a wood in hand still adds it, as in " +
-                "the game.");
+                "commas. Wood alone by default, so Fine wood, Core wood and the rest are kept for building. Empty: every " +
+                "wood it burns. Pressing E with a wood in hand still adds it, as in the game.");
 
             StationHint = settings.Bind(Stations, "StationHint", true,
                 "Show the fill hint", 17,
                 "Adds a line to a station's hover text naming the fill key.");
+
+            // Crafting an amount (card B16, his word of 2026-10-11): on out of the box at his call, as the replacement for
+            // MyLittleUI's Multicraft. Orders 16 down to 6, below the stations'.
+            Batches = settings.Bind(BatchesPart, "Batches", true,
+                "Craft an amount", 16,
+                "A number with + and - beside the Craft button: set how many to craft, press Craft once, and they are " +
+                "made one after another (in the game's x5 crafts where it can, below). The mouse wheel over the number " +
+                "changes it too. Never for upgrades. A run stops when you cancel, close the menu, pick another recipe, " +
+                "leave the station, or run out of materials. Off: the Craft button works as in the game.");
+
+            BatchesOfFive = settings.Bind(BatchesPart, "BatchesOfFive", true,
+                "Use the game's x5 crafts", 15,
+                "On: an amount is made as the game's own x5 crafts (as Shift + Craft does) as far as it goes, then one at a " +
+                "time: 41 is eight x5 crafts and one single. An x5 craft rolls the game's growing bonus (up to +15 items " +
+                "where the station's skill gives a bonus) and is quicker than five single crafts. An x5 craft is used only " +
+                "while the materials and the inventory room for all five, bonus included, are there; otherwise one at a " +
+                "time. Off: always one at a time.");
+
+            SkillWhole = settings.Bind(BatchesPart, "SkillWhole", true,
+                "Keep the skill from an x5 craft whole", 14,
+                "On: after an x5 craft (yours, or the game's own Shift + Craft) the crafting skill is raised five times by " +
+                "one step, as five single crafts raise it, instead of once by five. The game throws away what a raise has " +
+                "left over when the skill goes up a level, so a single raise of five can lose up to four steps at each " +
+                "level-up. Off: as the game does it.");
+
+            WholeAmount = settings.Bind(BatchesPart, "WholeAmount", true,
+                "Show the materials for the whole amount", 13,
+                "On: with an amount above 1, each material in the recipe shows what the whole amount needs (40 crafts of " +
+                "wood arrows at 8 Wood each: 3.8K/320), and its colour and flash judge the whole amount. While a run goes, " +
+                "what is still to make. Off: what one craft needs, as in the game.");
+
+            MostAmount = settings.Bind(BatchesPart, "MostAmount", 100,
+                "Largest amount", 12,
+                "The largest amount the number goes to, by any button, the wheel or the most-you-can-make click.",
+                new AcceptableValueRange<int>(10, 999));
+
+            StepFiveKey = settings.Bind(BatchesPart, "StepFiveKey", new KeyboardShortcut(KeyCode.LeftShift),
+                "Hold to step by five", 11,
+                "Hold it while clicking + or - or turning the mouse wheel over the number to change the amount by five " +
+                "instead of one.");
+
+            StepsOnFives = settings.Bind(BatchesPart, "StepsOnFives", true,
+                "Steps of five land on fives", 10,
+                "On: a step of five lands on a multiple of five (41, then 45, 50; down: 40, 35), so the amount is whole x5 " +
+                "crafts. Off: it adds or takes exactly five (41, 46, 51).");
+
+            MostKey = settings.Bind(BatchesPart, "MostKey", new KeyboardShortcut(KeyCode.LeftControl),
+                "Hold for most or one", 9,
+                "Hold it while clicking + (or turning the wheel up) for the most you can make with what you carry and the " +
+                "chests hold, up to the largest amount; with - (or the wheel down), back to 1. A right click on + or - " +
+                "does the same.");
+
+            KeepAmount = settings.Bind(BatchesPart, "KeepAmount", false,
+                "Keep the amount after a run", 8,
+                "Off: the number goes back to 1 when a run ends or stops, so the next press of Craft makes one. On: it " +
+                "goes back to the amount the run began with.");
+
+            HideMyLittleUI = settings.Bind(BatchesPart, "HideMyLittleUIMulticraft", true,
+                "Hide MyLittleUI's Multicraft", 7,
+                "With MyLittleUI installed and its Multicraft on: on, its + and - beside the Craft button are hidden and " +
+                "its queue stays idle while \"Craft an amount\" is on, so only this one shows (its own settings are left " +
+                "as they are). Off: this one stays hidden while MyLittleUI's Multicraft is on, and MyLittleUI's works as " +
+                "before.");
+
+            StopMessage = settings.Bind(BatchesPart, "StopMessage", true,
+                "Say why a run stopped", 6,
+                "A line at the top left when a run stops before the end for a reason other than your own (out of " +
+                "materials, no room, a craft that didn't happen), with how many it made.");
+
+            // The Pick button in F1 (card B03): the kiln's woods picked from pictures of what it burns, the text written as
+            // KilnWoods reads it (split at commas, exact case).
+            PickerSettings.Bind(settings);
+            Lists.Attach(KilnTakes, new ListSpec
+            {
+                Module = Module.Name,
+                Kinds = new[] { ThingKind.Items },
+                Format = new ListFormat { Separators = ",", Joiner = ",", IgnoreCase = false },
+                Holds = thing => GameThings.Inputs("charcoal_kiln").Contains(thing.Name),
+                Says = "The woods the charcoal kiln may take from chests, and be filled with.",
+                EmptyMeans = "every wood the kiln burns",
+                Warn = text => Module.Log?.LogWarning(text),
+            });
         }
+
+        private const string BatchesPart = "Batches";
 
         /// <summary>The chest rules as the settings say right now.</summary>
         internal static ChestRules Rules() => new ChestRules

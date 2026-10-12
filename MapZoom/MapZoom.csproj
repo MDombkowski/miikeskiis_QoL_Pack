@@ -63,6 +63,23 @@
       <Private>false</Private>
     </Reference>
 
+    <!-- The kit's Say: every message fitted to the screen, measured by the game's own message text (card B14) -->
+    <Reference Include="assembly_guiutils">
+      <HintPath>$(ValheimManaged)\assembly_guiutils.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>$(ValheimManaged)\Unity.TextMeshPro.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(ValheimManaged)\UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>$(ValheimManaged)\UnityEngine.UIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <!-- BepInEx, HarmonyX and Jotunn, from the mod profile -->
     <Reference Include="BepInEx">
       <HintPath>$(ModProfile)\BepInEx\core\BepInEx.dll</HintPath>

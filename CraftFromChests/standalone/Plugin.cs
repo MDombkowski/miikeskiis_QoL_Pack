@@ -16,6 +16,8 @@ namespace CraftFromChests
     // stays off (Module.Rivals).
     [BepInDependency(Module.AzuCraftyBoxes, BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency(Module.CraftFromContainers, BepInDependency.DependencyFlags.SoftDependency)]
+    // MyLittleUI, so its Multicraft can be found and hidden while "Craft an amount" is on (OtherMulticraft).
+    [BepInDependency(Module.MyLittleUI, BepInDependency.DependencyFlags.SoftDependency)]
     [NetworkCompatibility(CompatibilityLevel.NotEnforced, VersionStrictness.None)]
     public sealed class Plugin : BaseUnityPlugin
     {

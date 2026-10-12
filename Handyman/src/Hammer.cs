@@ -200,7 +200,7 @@ namespace Handyman
                 case Act.NoPieceYet:
                     if (Settings.Message.Value)
                     {
-                        player.Message(MessageHud.MessageType.TopLeft, NoPieceYetText);
+                        QoLMods.Kit.Say.TopLeft(NoPieceYetText);
                     }
                     break;
             }
@@ -276,7 +276,7 @@ namespace Handyman
                 if (Settings.Message.Value)
                 {
                     // The game's message localizes the piece's "$piece_…" name inside the sentence.
-                    player.Message(MessageHud.MessageType.TopLeft, $"{piece.m_name} can't be picked now");
+                    QoLMods.Kit.Say.TopLeft($"{piece.m_name} can't be picked now");
                 }
                 Act instead = TapRules.OnTap(false, true, AgainChoice.BackToMyPiece, false, Settings.NoPiece.Value);
                 if (instead != Act.NoPieceYet)
@@ -309,7 +309,7 @@ namespace Handyman
             }
             if (Settings.Message.Value)
             {
-                player.Message(MessageHud.MessageType.TopLeft, piece.m_name);
+                QoLMods.Kit.Say.TopLeft(piece.m_name);
             }
         }
     }

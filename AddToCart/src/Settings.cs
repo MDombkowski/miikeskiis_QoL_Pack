@@ -134,6 +134,7 @@ namespace AddToCart
                 "How far from you a chest may be for the cart to count and take from it. " + ChestSettings.OwnRangeNote,
                 new AcceptableValueRange<float>(0f, ChestSettings.MostRange));
             settings.MovedDefault(Range, ChestSettings.DefaultRange, 2);
+            ChestSettings.Reaches("Add to Cart", "Chest range (metres)", Range);   // the list in "Chests (every mod)" (card B13)
 
             Chests = settings.Bind(ModuleSettings.General, "Chests", WhichChests.AnyChestICanOpen,
                 "Which chests", 21,

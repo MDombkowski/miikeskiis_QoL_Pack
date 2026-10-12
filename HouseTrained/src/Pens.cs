@@ -42,7 +42,7 @@ namespace HouseTrained
         internal static void BeforeGroundContact(Character tame)
         {
             TameInfo info = Tames.Of(tame);
-            if (!info.Penned || (!Settings.PensRidden.Value && tame.HaveRider()))
+            if (!info.Penned || (!Settings.PensRidden.Value && tame.HaveRider()) || FreeFollower(tame.GetBaseAI()))
             {
                 return;
             }
@@ -55,6 +55,10 @@ namespace HouseTrained
             if (kind == GroundKind.Other)
             {
                 return;
+            }
+            if (kind == GroundKind.Creature && !OnTopOf(ground, GameHooks.GroundPoint(tame)))
+            {
+                return;   // a player, or a creature only bumped at its side: the game's own ground, as without the mod (card B12)
             }
             float step = Settings.Step.Value > 0f ? Settings.Step.Value : info.OwnStep;
             float height = 0f;
@@ -102,6 +106,38 @@ namespace HouseTrained
                 body.AddForce(NudgeWatch.Away(tame.transform.position, under.position, tame.transform.right) * nudge, ForceMode.VelocityChange);
             }
         }
+
+        // Whether the contact is the tame standing on another creature (card B12, after his Loxes vanished on 2026-10-10/11
+        // and his log showed "a Lox doesn't stand on a creature" all the while): the game takes the most upward-facing
+        // contact low on the tame's body as its ground, and clearing it clears the whole step's ground, the earth's too. So
+        // never for a player (the rule keeps tames from climbing each other out of a pen; a friend at its legs, feeding it
+        // or getting on, is no reason to take its ground away and push it), and only on the other's upper half (a bump at
+        // its side, both on the ground, is not standing on it).
+        private static bool OnTopOf(Collider ground, Vector3 contact)
+        {
+            Rigidbody body = ground.attachedRigidbody;
+            if (body == null)
+            {
+                return false;
+            }
+            // Kept per body (this runs every physics step while a tame touches a creature: review nit), cleared at a size.
+            if (!CharacterOf.TryGetValue(body, out Character other))
+            {
+                if (CharacterOf.Count > 256)
+                {
+                    CharacterOf.Clear();
+                }
+                other = body.GetComponent<Character>();
+                CharacterOf[body] = other;
+            }
+            if (other == null || other is Player)
+            {
+                return false;
+            }
+            return GroundRule.OnTop(contact.y, other.GetCenterPoint().y);
+        }
+
+        private static readonly Dictionary<Rigidbody, Character> CharacterOf = new Dictionary<Rigidbody, Character>();
 
         /// <summary>A birth starting: its parent noted, if the part looks after it.</summary>
         internal static void BeforeBirth(Procreation procreation)
@@ -465,9 +501,9 @@ namespace HouseTrained
         internal static void BeforeIdle(BaseAI ai)
         {
             Character tame = Chosen(ai, out TameInfo info);
-            if (tame == null || tame.IsFlying() || tame.IsSwimming() || tame.HaveRider())
+            if (tame == null || tame.IsFlying() || tame.IsSwimming() || tame.HaveRider() || info.WalksHomeFrame == Time.frameCount)
             {
-                return;
+                return;   // with the Hoarstone, a tame walking home this update is left to it (Ground.BeforeIdle)
             }
             Vector3 here = tame.transform.position;
             Vector3 center = Centre(ai, info, here, out bool far);
@@ -648,7 +684,7 @@ namespace HouseTrained
         {
             Vector3 patrol = Vector3.zero;
             bool has = GameHooks.PatrolPointOf != null && GameHooks.PatrolPointOf(ai, out patrol);
-            return WanderCentre.Of(here, has, patrol, info.Commandable, Parts.FarHomeOn, ai.m_randomMoveRange, out far);
+            return WanderCentre.Of(here, has, patrol, Following.ToldToStay(GameHooks.AiCharacter(ai), info), Parts.FarHomeOn, ai.m_randomMoveRange, out far);
         }
 
         // Its body's lowest point above its root, now.
@@ -668,7 +704,7 @@ namespace HouseTrained
                 return;
             }
             Character tame = Chosen(ai, out TameInfo info);
-            if (tame != null && !info.Commandable && Utils.DistanceXZ(point, tame.transform.position) > ai.m_randomMoveRange * Settings.FarHomeTimes.Value)
+            if (tame != null && !Following.ToldToStay(tame, info) && Utils.DistanceXZ(point, tame.transform.position) > ai.m_randomMoveRange * Settings.FarHomeTimes.Value)
             {
                 result = false;
             }
@@ -684,8 +720,13 @@ namespace HouseTrained
                 return null;
             }
             info = Tames.Of(tame);
-            return info.Penned ? tame : null;
+            return info.Penned && !FreeFollower(ai) ? tame : null;
         }
+
+        // A tame following a player, left alone by this part while "Pens' rules leave followers alone" is on (card B25): only
+        // its owner's game runs its AI, and there the game's own follow target says.
+        private static bool FreeFollower(BaseAI ai) =>
+            Parts.FollowOn && Settings.FollowFreeOfPens.Value && ai is MonsterAI monster && monster.GetFollowTarget() != null;
 
         private static void Tell(TameInfo info, float now, string what)
         {
@@ -758,7 +799,8 @@ namespace HouseTrained
                 return false;
             }
 
-            public bool Valid(Vector3 point) => GameHooks.ValidWanderPoint == null || GameHooks.ValidWanderPoint(ai, point);
+            // With the Hoarstone (card B26): a tame on a Hoarstone's ground picks only places on it.
+            public bool Valid(Vector3 point) => (GameHooks.ValidWanderPoint == null || GameHooks.ValidWanderPoint(ai, point)) && Ground.MayWanderTo(ai, point);
 
             public bool Clear(Vector3 point, Vector3 facing, float margin)
             {
@@ -778,7 +820,8 @@ namespace HouseTrained
                 {
                     arrival = corners[corners.Count - 1] - corners[corners.Count - 2];
                 }
-                return true;
+                // With the Hoarstone (card B26): a tame on a Hoarstone's ground walks only paths that stay on it.
+                return Ground.CornersStayInside(ai, corners);
             }
 
             // Its head clear on arrival: the point is the floor, its root the body's lowest point below it (code review 2,

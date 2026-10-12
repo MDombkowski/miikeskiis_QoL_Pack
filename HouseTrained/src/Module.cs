@@ -23,7 +23,7 @@ namespace HouseTrained
 
         internal const string Name = "House Trained";
 
-        internal const string Version = "0.2.0";
+        internal const string Version = "0.4.0";
 
         private static Module current;
 
@@ -70,7 +70,9 @@ namespace HouseTrained
         {
             GameHooks.Resolve(missingOptional);
             Walls.PieceMask = LayerMask.GetMask("piece");
+            QoLMods.HoarstoneGround.Ground.Warn = text => Warn(text);
             Folds.RebuildList = ManagerLink.Rebuild();   // null with a Jötunn too old to ask
+            QoLMods.ListPicker.Lists.Resolve(missingOptional);
         }
 
         /// <summary>Every frame while the module runs, also while switched off: the fold-outs, which parts are on (and
@@ -83,6 +85,8 @@ namespace HouseTrained
             Hello.Tick(now, IsOn, Parts.FriendlyOn);
             PenHealing.Tick(now);
             HandFeed.Tick(now);
+            Following.Tick();
+            Ground.Tick(now);
         }
 
         /// <summary>After an error, each step on its own (MODULES.md rule 7; code review 1, nit 18): every part read as off,
@@ -95,6 +99,7 @@ namespace HouseTrained
             Tames.ForgetAllPens,
             Pens.Forget,
             Hello.Forget,
+            Ground.Forget,
         };
     }
 }

@@ -19,7 +19,7 @@
     <TargetFramework>net472</TargetFramework>
     <AssemblyName>StoreStash</AssemblyName>
     <RootNamespace>StoreStash</RootNamespace>
-    <Version>0.7.0</Version>
+    <Version>0.7.3</Version>
     <!-- Keep the private repo's commit id out of the DLL's version text. -->
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <LangVersion>10.0</LangVersion>

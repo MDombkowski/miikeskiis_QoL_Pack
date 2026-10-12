@@ -73,14 +73,7 @@ namespace QoLMods.Chests
         private const BindingFlags AnyInstance = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
         /// <summary>Tells him something in the middle of the screen. Only the scratch test harness sets another.</summary>
-        internal static Action<string> Say = text =>
-        {
-            Player player = Player.m_localPlayer;
-            if (player != null)   // Unity's own null test
-            {
-                player.Message(MessageHud.MessageType.Center, text);
-            }
-        };
+        internal static Action<string> Say = text => QoLMods.Kit.Say.Center(text);   // fitted to the screen (card B14)
 
         private static FieldInfo dragGo;
         private static FieldInfo dragInventory;

@@ -232,7 +232,7 @@ namespace CraftFromChests
             }
             else
             {
-                player.Message(MessageHud.MessageType.Center, "$msg_missingrequirement");
+                QoLMods.Kit.Say.Center("$msg_missingrequirement");
             }
             return false;
         }

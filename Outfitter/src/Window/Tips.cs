@@ -35,10 +35,17 @@ namespace Outfitter.Window
 
         /// <summary>Every frame the window or the pop-up shows: the box comes up once the pointer has rested long enough,
         /// and goes when it leaves, the window closes, or the setting is off.</summary>
-        internal static void Update(bool windowShows)
+        internal static void Update(bool windowShows) => Update(windowShows, false);
+
+        /// <summary>As the other; while the pop-up shows (<paramref name="popupShows"/>), only the tips that always show
+        /// (Tip.Always: an item's name beside its icon in the missing-items question, card B21) come up, whatever "Hover
+        /// help" says, and no button's of the window under it.</summary>
+        internal static void Update(bool windowShows, bool popupShows)
         {
-            bool wanted = windowShows && resting != null && resting.isActiveAndEnabled && Settings.HoverHelp != null && Settings.HoverHelp.Value &&
-                          Time.unscaledTime - since >= Delay;
+            bool allowed = resting != null &&
+                           (resting.Always ? windowShows || popupShows
+                                           : windowShows && !popupShows && Settings.HoverHelp != null && Settings.HoverHelp.Value);
+            bool wanted = allowed && resting.isActiveAndEnabled && Time.unscaledTime - since >= Delay;
             if (!wanted)
             {
                 Hide();
@@ -185,6 +192,10 @@ namespace Outfitter.Window
     {
         /// <summary>The words, asked each time they show (they may say what the button would do now).</summary>
         internal Func<string> Words;
+
+        /// <summary>Shown whatever "Hover help" says, and over the pop-up: what it names can be read nowhere else (an item's
+        /// name beside its icon in the missing-items question, card B21).</summary>
+        internal bool Always;
 
         /// <summary>Drawn faded until the pointer is over it (Ui.SetFaded).</summary>
         internal bool Faded;

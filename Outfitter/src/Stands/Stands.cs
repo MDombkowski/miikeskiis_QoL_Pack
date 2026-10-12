@@ -226,7 +226,7 @@ namespace Outfitter.Stands
             Player player = Player.m_localPlayer;
             if (player != null && !string.IsNullOrEmpty(text))
             {
-                player.Message(centre ? MessageHud.MessageType.Center : MessageHud.MessageType.TopLeft, text);
+                QoLMods.Kit.Say.To(centre ? MessageHud.MessageType.Center : MessageHud.MessageType.TopLeft, text);
             }
         };
 

@@ -33,6 +33,10 @@ namespace AFKRaidBlocker
 
         internal static ConfigEntry<int> NearbyMetres { get; private set; }
 
+        internal static ConfigEntry<bool> ShowIcon { get; private set; }
+
+        internal static ConfigEntry<bool> ShowMessages { get; private set; }
+
         internal static ConfigEntry<MessagePlace> Message { get; private set; }
 
         internal static ConfigEntry<bool> ShowMyMark { get; private set; }
@@ -61,53 +65,53 @@ namespace AFKRaidBlocker
             Enabled = settings.Enabled;
 
             AwayAfterMinutes = settings.Bind(ModuleSettings.General, "AwayAfterMinutes", 5,
-                "Away after this many minutes", 20,
+                "Away after this many minutes", 22,
                 "After this many minutes without moving (and, with the next setting, without a key, the mouse or a " +
                 "gamepad either), you count as away from the keyboard, and raids no longer start on you while nobody " +
                 "near you is playing. 0 for never: then only sitting or lying down makes you away.",
                 new AcceptableValueRange<int>(0, MostMinutes));
 
             InputCounts = settings.Bind(ModuleSettings.General, "InputCounts", AFKRaidBlocker.InputCounts.MovementKeysAndMouse,
-                "What counts as being there", 19,
+                "What counts as being there", 21,
                 "Movement, keys and the mouse: pressing a key, a mouse button or a gamepad button, moving the mouse or a " +
                 "stick, or the wheel keeps you there (only while the game's window has the focus; a key left held down " +
                 "counts once, as it's pressed). Movement only: only moving your character does; you can then look " +
                 "around, open the map or type in the console and still go away.");
 
             EmotesCount = settings.Bind(ModuleSettings.General, "EmotesCount", true,
-                "Sitting or lying down by an emote counts", 18,
+                "Sitting or lying down by an emote counts", 20,
                 "On: sitting or lying down by an emote (the Sit key, /sit, /rest or /relax) makes you away, your way of " +
                 "saying you've stepped away. You're back when you stand up.");
 
             Emotes = settings.Bind(ModuleSettings.General, "Emotes", "sit, rest, relax",
-                "Which emotes count", 17,
+                "Which emotes count", 19,
                 "The emotes that make you away, by their chat names, separated by commas: sit (sitting on the ground), " +
                 "rest and relax (lying down). An emote counts while you hold its pose: sit until you get up, rest and " +
                 "relax until you get up or a hit knocks you up; kneel can be added too; a short one such as wave would " +
                 "count only while it plays.");
 
             ChairsCount = settings.Bind(ModuleSettings.General, "ChairsCount", false,
-                "Sitting in a chair counts", 16,
+                "Sitting in a chair counts", 18,
                 "On: sitting in a chair, on a bench (a ship's too) or a throne makes you away, as an emote does.");
 
             BedsCount = settings.Bind(ModuleSettings.General, "BedsCount", false,
-                "Lying in a bed counts", 15,
+                "Lying in a bed counts", 17,
                 "On: lying in a bed makes you away, as an emote does.");
 
             SeatTiming = settings.Bind(ModuleSettings.General, "SeatTiming", AFKRaidBlocker.SeatTiming.AtOnce,
-                "Sitting or lying makes you away", 14,
+                "Sitting or lying makes you away", 16,
                 "At once: you're away as soon as you sit or lie down by a way that counts. After the same minutes: " +
                 "only once you've sat or lain there for the minutes above, whatever you press meanwhile (with 0 " +
                 "minutes, at once).");
 
             HeldOff = settings.Bind(ModuleSettings.General, "HeldOff", AFKRaidBlocker.HeldOff.RaidsThatNeedABase,
-                "What's held off while you're away", 13,
+                "What's held off while you're away", 15,
                 "Raids that need a base: the game's raids on a base (trolls, the Fuling army, the Elder's greydwarfs " +
                 "and the rest) don't start on you. Every random event: no random event starts on you, the wolves of " +
                 "the mountains and plains included (they come without a base). A raid already under way goes on.");
 
             NearbyMetres = settings.Bind(ModuleSettings.General, "NearbyMetres", Nearby.RaidReach,
-                "Someone still playing within (m) lets raids come", 12,
+                "Someone still playing within (m) lets raids come", 14,
                 "Raids are held off only while everyone near you is away too: while a player who isn't away (or who " +
                 "doesn't have this mod) is within this many metres of you, raids can start on you as usual, and reach " +
                 "them. 96 is a raid's reach. It counts the players your game has loaded around you (at the game's " +
@@ -115,10 +119,20 @@ namespace AFKRaidBlocker
                 "the map. 0: held off whoever is near.",
                 new AcceptableValueRange<int>(0, Nearby.MostMetres));
 
+            ShowIcon = settings.Bind(ModuleSettings.General, "ShowIcon", true,
+                "Show the AFK sign", 13,
+                "On: the whole time you're away, a small \"AFK\" sign shows at the top of your screen, over the " +
+                "inventory, chests, the crafting and build menus, the map and every other window, and it goes the " +
+                "moment you're back. It hides while you hide the game's HUD (Ctrl+F3).");
+
+            ShowMessages = settings.Bind(ModuleSettings.General, "ShowMessages", true,
+                "Show the away and back messages", 12,
+                "On: a short line says that raids are held off as you go away, and that they can come again as you " +
+                "come back, where the next setting says. Off: no line.");
+
             Message = settings.Bind(ModuleSettings.General, "Message", MessagePlace.Centre,
-                "A message going away and coming back", 11,
-                "Where a short line says that raids are held off as you go away, and that they can come again as you " +
-                "come back: in the middle of the screen, top left, or nowhere.");
+                "Where the away and back messages show", 11,
+                "Where the line going away and coming back shows: in the middle of the screen, top left, or nowhere.");
 
             ShowMyMark = settings.Bind(ModuleSettings.General, "ShowMyMark", false,
                 "Others see you're away", 10,

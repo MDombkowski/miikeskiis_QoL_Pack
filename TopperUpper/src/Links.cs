@@ -8,13 +8,15 @@ namespace TopperUpper
 {
     /// <summary>
     /// Chests linked to a station (card A77; the research's 4.1): Left Alt + J pointing at a station starts linking it;
-    /// then E on a chest makes it an input (the station takes only from its inputs), Left Shift + E an output (what it
-    /// makes goes there), and the same again unlinks it; the key again at the station (or pointing at nothing), opening
-    /// a menu or the inventory (Escape does), walking 30 m away or a minute without a change ends it. While linking, the
-    /// game's own E doesn't open a chest (Interact). The links live on the station, as one line of text naming each chest
-    /// by its prefab and its place (LinkText), never its network ID, which the game renumbers at every load; a chest found
-    /// within 5 cm of the place is the one. Only a chest of the game's own kind that a player built, standing still (never
-    /// a cart's or a ship's), may be linked.
+    /// then E on a chest makes it an input (the station takes only from its inputs) or no longer one, Left Shift + E the
+    /// same for an output (what it makes goes there), each role on its own, so a chest may be both (card B11); the key
+    /// again at the station (or pointing at nothing), opening a menu or the inventory (Escape does), walking 30 m away or
+    /// a minute without a change ends it. While linking, the game's own E doesn't open a chest (Interact), and a chest's
+    /// hover text says what E and Left Shift + E will do to it (Hover). Every press while linking, and why linking ended,
+    /// is written to the log, so a test that shows nothing says why (card B11). The links live on the station, as one line
+    /// of text naming each chest by its prefab and its place (LinkText), never its network ID, which the game renumbers at
+    /// every load; a chest found within 5 cm of the place is the one. Only a chest of the game's own kind that a player
+    /// built, standing still (never a cart's or a ship's), may be linked.
     /// </summary>
     internal static class Links
     {
@@ -78,15 +80,17 @@ namespace TopperUpper
                     continue;
                 }
                 Vector3 at = chest.transform.position;
+                bool? linkable = null;
                 foreach (Link link in links)
                 {
-                    // The place first (cheap), then the prefab.
+                    // The place first (cheap), then the prefab. Every link is looked at: a chest may be both (card B11).
                     if (Math.Abs(at.x * 100.0 - link.X) > LinkText.Near || Math.Abs(at.y * 100.0 - link.Y) > LinkText.Near ||
                         Math.Abs(at.z * 100.0 - link.Z) > LinkText.Near || !link.Is(Prefab(chest), at.x, at.y, at.z))
                     {
                         continue;
                     }
-                    if (WhyNotLinkable(chest) == null)
+                    linkable = linkable ?? WhyNotLinkable(chest) == null;
+                    if (linkable == true)
                     {
                         List<Container> into = link.Output ? outputs : inputs;
                         if (!into.Contains(chest))
@@ -94,7 +98,6 @@ namespace TopperUpper
                             into.Add(chest);
                         }
                     }
-                    break;
                 }
             }
             Vector3 station = fed.Position;
@@ -102,10 +105,11 @@ namespace TopperUpper
             outputs.Sort((a, b) => (a.transform.position - station).sqrMagnitude.CompareTo((b.transform.position - station).sqrMagnitude));
         }
 
-        /// <summary>The station (in the registry) and role a chest is linked to, for its hover line; null role when none.</summary>
-        internal static List<KeyValuePair<Fed, bool>> LinkedTo(Container chest)
+        /// <summary>The stations (in the registry) a chest is linked to, each with what the chest is to it ("its input",
+        /// "its output", or both), for its hover lines.</summary>
+        internal static List<KeyValuePair<Fed, string>> LinkedTo(Container chest)
         {
-            var found = new List<KeyValuePair<Fed, bool>>();
+            var found = new List<KeyValuePair<Fed, string>>();
             Vector3 at = chest.transform.position;
             string prefab = null;
             foreach (Fed fed in Registry.All)
@@ -120,13 +124,21 @@ namespace TopperUpper
                     continue;
                 }
                 prefab = prefab ?? Prefab(chest);
-                Link link = LinkText.Find(links, prefab, at.x, at.y, at.z);
-                if (link != null)
+                LinkText.RolesOf(links, prefab, at.x, at.y, at.z, out bool input, out bool output);
+                string role = LinkWords.Role(input, output);
+                if (role != null)
                 {
-                    found.Add(new KeyValuePair<Fed, bool>(fed, link.Output));
+                    found.Add(new KeyValuePair<Fed, string>(fed, role));
                 }
             }
             return found;
+        }
+
+        /// <summary>What a chest is to a station: its roles among the station's links.</summary>
+        internal static void RolesOf(Fed fed, Container chest, out bool input, out bool output)
+        {
+            Vector3 at = chest.transform.position;
+            LinkText.RolesOf(Of(fed), Prefab(chest), at.x, at.y, at.z, out input, out output);
         }
 
         /// <summary>Why a chest can't be linked, as words after "the chest is"; null if it can: the game's own kind of chest, a
@@ -190,7 +202,7 @@ namespace TopperUpper
                 }
                 if (Menu.IsVisible() || InventoryGui.IsVisible() || Minimap.IsOpen())
                 {
-                    End(null);
+                    End(null, "a menu, the inventory or the map opened");
                     return;
                 }
             }
@@ -209,7 +221,13 @@ namespace TopperUpper
                     {
                         End("Linking done.");
                     }
-                    return;   // at a chest, the key is StoreStash's chest setup: linking goes on
+                    else
+                    {
+                        // At a chest, the key is StoreStash's chest setup: linking goes on.
+                        Module.Log.LogInfo($"Linking the {Names.Of(current)}: the link key at a chest does nothing to its links " +
+                                           "(E and Left Shift + E link it); linking goes on.");
+                    }
+                    return;
                 }
                 if (station)
                 {
@@ -217,20 +235,24 @@ namespace TopperUpper
                 }
                 return;
             }
-            if (current == null)
-            {
-                return;
-            }
-            // E links an input, the game's own "alt" with it (Left Shift, or the gamepad's) an output; never a press with Alt
-            // or Ctrl held, which is another key's (Reserve Stock's Left Alt + E at a chest: code review m3).
-            LinkPress press = LinkPresses.Of(Keys.UseDown(), Keys.AltHeld(), Keys.CtrlHeld(), Keys.GameAlt());
-            if (press == LinkPress.None)
+            if (current == null || !Keys.UseDown())
             {
                 return;
             }
             Container chest = hover != null ? hover.GetComponentInParent<Container>() : null;
             if (chest == null)
             {
+                return;   // E on something else: the game's own use, as ever
+            }
+            // E links an input, the game's own "alt" with it (Left Shift, or the gamepad's) an output; never a press with Alt
+            // or Ctrl held, which is another key's (Reserve Stock's Left Alt + E at a chest: code review m3).
+            bool alt = Keys.AltHeld();
+            LinkPress press = LinkPresses.Of(true, alt, Keys.CtrlHeld(), Keys.GameAlt());
+            string where = $"{Prefab(chest)} at {Place(chest.transform.position)}";
+            if (press == LinkPress.None)
+            {
+                Module.Log.LogInfo($"Linking the {Names.Of(current)}: E on {where} with {(alt ? "Alt" : "Ctrl")} held is another key's, " +
+                                   "so it links nothing.");
                 return;
             }
             bool output = press == LinkPress.Output;
@@ -238,6 +260,7 @@ namespace TopperUpper
             if (why != null)
             {
                 Marks.Show($"Can't link it: the chest is {why}.");
+                Module.Log.LogInfo($"Linking the {Names.Of(current)}: {where} can't be linked: it is {why}.");
                 return;
             }
             Vector3 at = chest.transform.position;
@@ -249,17 +272,28 @@ namespace TopperUpper
             LinkChange change = LinkText.Toggle(links, LinkText.At(output, Prefab(chest), at.x, at.y, at.z));
             if (change == LinkChange.Full)
             {
-                Marks.Show($"The {Names.Of(current)} has as many {(output ? "outputs" : "inputs")} as it can keep ({LinkText.MostEach}).");
+                Marks.Show($"The {Names.Of(current)} has as many {(output ? "outputs" : "inputs")}\nas it can keep ({LinkText.MostEach}).");
+                Module.Log.LogInfo($"Linking the {Names.Of(current)}: {where} not linked as {(output ? "an output" : "an input")}: " +
+                                   $"it has {LinkText.MostEach} already.");
                 return;
             }
             string how = Marks.SetLinks(current, LinkText.Write(links));
             changedAt = now;
-            string role = output ? "an output" : "an input";
-            string said = change == LinkChange.Unlinked ? $"Unlinked from the {Names.Of(current)}" :
-                          change == LinkChange.Switched ? $"Now {role} of the {Names.Of(current)}" : $"Linked: {role} of the {Names.Of(current)}";
-            Marks.Show($"{said}{how}. {Summary(current)}");
+            LinkText.RolesOf(links, Prefab(chest), at.x, at.y, at.z, out bool isInput, out bool isOutput);
+            string said = LinkWords.After(Names.Of(current), output, change, isInput, isOutput, Summary(current));
+            if (how.Length > 0)
+            {
+                said += "\n" + how.Trim();
+            }
+            Marks.Show(said);
+            Module.Log.LogInfo($"Linking the {Names.Of(current)}: {(output ? "Left Shift + E" : "E")} on {where}: " +
+                               $"{(change == LinkChange.Unlinked ? "unlinked as" : "linked as")} {(output ? "an output" : "an input")}; " +
+                               $"the chest is now {LinkWords.Role(isInput, isOutput) ?? "not linked"}{how}.");
             current.Due = 0f;
         }
+
+        // A place as the log names it: "x 120.3, z -45.1".
+        private static string Place(Vector3 at) => $"x {at.x:0.0}, z {at.z:0.0}";
 
         /// <summary>"Takes from 2 chests · Puts into 1", or "" with none linked.</summary>
         internal static string Summary(Fed fed)
@@ -287,13 +321,19 @@ namespace TopperUpper
         {
             linking = fed;
             changedAt = Time.time;
-            string done = Keys.Text(Settings.LinkKey.Value);
-            Marks.Show($"Linking the {Names.Of(fed)}'s chests. E on a chest: it takes from that chest. Left Shift + E: it puts what it " +
-                       $"makes there. The same again unlinks it. {done} here, or away from chests, when you're done.");
+            // Short lines, one thing each (his test of 0.1.0: the one long line ran off the screen, card B11); the chest's
+            // hover text says the same while linking.
+            Marks.Show(LinkWords.Start(Names.Of(fed), Keys.UseName(), Keys.AltName(), Keys.Text(Settings.LinkKey.Value)));
+            Module.Log.LogInfo($"Linking the {Names.Of(fed)}'s chests (at {Place(fed.Position)}): {Summary(fed).ToLowerInvariant()}" +
+                               $"{(Of(fed).Count == 0 ? "none linked yet" : string.Empty)}.");
         }
 
-        private static void End(string said)
+        private static void End(string said, string why = null)
         {
+            if (linking != null)
+            {
+                Module.Log.LogInfo(why != null ? $"Linking ended: {why}." : said);   // said: "Linking ended: ..." or "Linking done."
+            }
             linking = null;
             if (said != null)
             {

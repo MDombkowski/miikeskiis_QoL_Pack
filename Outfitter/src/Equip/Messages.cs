@@ -4,6 +4,64 @@ using Outfitter.Loadouts;
 
 namespace Outfitter.Equip
 {
+    /// <summary>A question with a list of items (the missing-items question, card B21): its heading, one line per item,
+    /// how many weren't listed, the lines after the list, and the question itself.</summary>
+    internal sealed class ListQuestion
+    {
+        /// <summary>The bullet each item's line starts with (his words: "a bullet instead of the "-"").</summary>
+        internal const string Bullet = "\u2022";
+
+        internal string Heading = string.Empty;
+        internal readonly List<ListedItem> Items = new List<ListedItem>();
+
+        /// <summary>Items beyond the ones listed ("and n more").</summary>
+        internal int More;
+
+        internal readonly List<string> After = new List<string>();
+        internal string Prompt = string.Empty;
+
+        /// <summary>The line after the list for the items not listed, or null.</summary>
+        internal string MoreLine => More > 0 ? $"{Bullet} and {More} more" : null;
+
+        /// <summary>All of it as plain text: a blank line between the heading and the list and between the list and what
+        /// follows.</summary>
+        internal string Text()
+        {
+            var text = new StringBuilder();
+            text.Append(Heading).Append("\n\n");
+            foreach (ListedItem item in Items)
+            {
+                text.Append(Bullet).Append(' ').Append(item.Line(withName: true)).Append('\n');
+            }
+            if (MoreLine != null)
+            {
+                text.Append(MoreLine).Append('\n');
+            }
+            text.Append('\n');
+            foreach (string line in After)
+            {
+                text.Append(line).Append('\n');
+            }
+            text.Append(Prompt);
+            return text.ToString();
+        }
+    }
+
+    /// <summary>One item of a <see cref="ListQuestion"/>: its name, how many, why, and the game's item for its icon (null: none,
+    /// an item this game lacks or a food slot no food fills).</summary>
+    internal sealed class ListedItem
+    {
+        internal string Name = string.Empty;
+        internal int Count;
+        internal string Why = string.Empty;
+        internal ItemDrop.ItemData Template;
+
+        /// <summary>Its line after the bullet (and the icon): "Lingering Stamina Mead x3: not enough nearby", or, beside an
+        /// icon that names it on hover, "x3: not enough nearby" (the count always shown then, x1 too).</summary>
+        internal string Line(bool withName) =>
+            withName ? $"{Name}{(Count > 1 ? " x" + Count : string.Empty)}: {Why}" : $"x{Count}: {Why}";
+    }
+
     /// <summary>
     /// What Outfitter says about an equip, in plain words: one line at the top left ("Result message": one line, or a line
     /// for each part, also in the log), the missing-items question, and the confirm question. Item names are the game's
@@ -111,36 +169,49 @@ namespace Outfitter.Equip
             return missing.Count == 0 ? "nothing is missing" : "missing " + Few(missing, show);
         }
 
-        internal static string MissingQuestion(Loadout loadout, EquipPlan plan, EquipMode mode)
+        /// <summary>How many missing items the question lists before "and n more" (the pop-up scrolls).</summary>
+        internal const int MissingListed = 40;
+
+        /// <summary>The missing-items question as plain text (where no pop-up draws its icons): the heading, a blank line,
+        /// a bullet per missing item, a blank line, what goes into the chests, and the question (card B21).</summary>
+        internal static string MissingQuestion(Loadout loadout, EquipPlan plan, EquipMode mode) => MissingList(loadout, plan, mode).Text();
+
+        /// <summary>The missing-items question in its parts, for the pop-up to draw each item's icon beside its line (card
+        /// B21, his feedback of 2026-10-11). No settings path in it: "Missing items" is in F1 with every other setting.</summary>
+        internal static ListQuestion MissingList(Loadout loadout, EquipPlan plan, EquipMode mode)
         {
-            var text = new StringBuilder();
-            text.Append($"Some of {loadout.Name} isn't in the chests nearby:\n");
+            var question = new ListQuestion { Heading = $"Some of {loadout.Name} isn't in the chests nearby:" };
             int away = plan.Aways.Count;
-            int shown = 0;
             foreach (Want want in plan.Wants)
             {
                 if (want.Missing <= 0)
                 {
                     continue;
                 }
-                if (shown++ == 8)
+                if (question.Items.Count == MissingListed)
                 {
-                    text.Append("...\n");
-                    break;
+                    question.More++;
+                    continue;
                 }
-                text.Append($"- {NameOf(want.First)}{(want.Missing > 1 ? " x" + want.Missing : string.Empty)}: {want.Why}\n");
+                question.Items.Add(new ListedItem
+                {
+                    Name = NameOf(want.First),
+                    Count = want.Missing,
+                    Why = want.Why ?? "none nearby",
+                    Template = want.Template,
+                });
             }
             if (mode == EquipMode.FullyReplace && away > 0)
             {
                 // One yes puts away what isn't in the loadout: say how much (R1, finding 24; R2, finding 11).
-                text.Append($"{Stacks(plan, away)} of what you carry go{(away == 1 ? "es" : "")} into the chests (what none has room for stays with you).\n");
+                question.After.Add($"{Stacks(plan, away)} of what you carry go{(away == 1 ? "es" : "")} into the chests (what none has room for stays with you).");
             }
             if (plan.CellsShort > 0)
             {
-                text.Append($"Your inventory is {plan.CellsShort} cell{(plan.CellsShort == 1 ? "" : "s")} short of room for all of it.\n");
+                question.After.Add($"Your inventory is {plan.CellsShort} cell{(plan.CellsShort == 1 ? "" : "s")} short of room for all of it.");
             }
-            text.Append("Equip what's here? (Never ask: F1, Outfitter, Equipping, \"Missing items\": EquipWhatsHere.)");
-            return text.ToString();
+            question.Prompt = "Equip what's here?";
+            return question;
         }
 
         internal static string ConfirmQuestion(Loadout loadout, EquipPlan plan)
@@ -168,7 +239,7 @@ namespace Outfitter.Equip
             {
                 return;
             }
-            player.Message(MessageHud.MessageType.TopLeft, result.Line);
+            QoLMods.Kit.Say.TopLeft(result.Line);
             if (Settings.Result.Value != ResultMessage.Detailed)
             {
                 return;
@@ -177,12 +248,12 @@ namespace Outfitter.Equip
             foreach (MissingItem item in result.Missing)
             {
                 string line = $"Missing: {NameOf(item.Item)}{(item.Count > 1 ? " x" + item.Count : string.Empty)} ({item.Why}).";
-                player.Message(MessageHud.MessageType.TopLeft, line);
+                QoLMods.Kit.Say.TopLeft(line);
                 Module.Log.LogInfo(line);
             }
             foreach (string line in result.NotPutOn)
             {
-                player.Message(MessageHud.MessageType.TopLeft, "Not put on: " + line);
+                QoLMods.Kit.Say.TopLeft("Not put on: " + line);
                 Module.Log.LogInfo("Not put on: " + line);
             }
         }

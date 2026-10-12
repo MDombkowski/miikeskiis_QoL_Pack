@@ -1,0 +1,17 @@
+# Mods that nothing the pack shows a player may name: no setting's name or description, no message on screen, no log
+# line, no README. miikeskii's rule 8 (PROJECT.md, 2026-10-10): a setting's text or a message names another mod only
+# when ours works with it, changes it, stands aside for it or deliberately makes room for it, and a mod he no longer
+# uses is named nowhere. tools\check-mod-names.ps1 reads this list, and tools\package.ps1 runs it over the built
+# QoLMods.dll (every string in it) and the README of the bundle and of every module (card B05).
+#
+# One name per line, matched whole (not inside a longer word: "ServersideQoL" never matches the pack's own
+# "ServerSideQoLPack") and in any case. A line starting with # is a note. Add a mod here when it leaves his setup and
+# nothing of ours works with it any more; take it off if a mod of ours starts working with it again. CHANGELOGs are
+# history and aren't read, nor are CREDITS.md files: crediting where an idea or a number came from is his rule 5
+# (Topper-Upper's credits name ServersideQoL's numbers). A note may also follow a name after a #.
+
+# ServersideQoL: its AutoStore (loose-item pickup, chest sorting) and AutoProcess (station feeding) were uninstalled
+# from his friend's server on 2026-10-10, and Topper-Upper and miikeskii's Server-Side QoL Pack do that work now. Its
+# base, ContainerSizes, AutoMapTables and MultiplayerTweaks still run there, but no code of the QoL Pack works with,
+# changes, stands aside for or makes room for any of them.
+ServersideQoL

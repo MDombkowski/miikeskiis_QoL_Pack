@@ -94,7 +94,7 @@ namespace TopperUpper
                 return false;
             }
             float distance = Vector3.Distance(him, fed.Position);
-            if (distance > Settings.LightRange.Value)
+            if (distance > Settings.LightReach)
             {
                 fed.Why = "Farther from you than the light range";
                 return false;
@@ -107,7 +107,7 @@ namespace TopperUpper
             {
                 return false;   // its owner hasn't burned the time it was away yet (n1): looked at again next time
             }
-            if (!fed.Mine && !Owners.MayFeedByHand(fed, Settings.LightRange.Value, now))
+            if (!fed.Mine && !Owners.MayFeedByHand(fed, Settings.LightReach, now))
             {
                 return false;
             }
@@ -126,7 +126,7 @@ namespace TopperUpper
             }
             bool mine = fed.Mine;
             float now = Time.time;
-            if (!mine && !Owners.MayFeedByHand(fed, Settings.LightRange.Value, now))
+            if (!mine && !Owners.MayFeedByHand(fed, Settings.LightReach, now))
             {
                 return;
             }
@@ -136,7 +136,7 @@ namespace TopperUpper
             }
             // Chests near him: found with the count and kept as long (m5); near the light: its own small search.
             bool nearLight = Settings.LightFuelFrom.Value == FuelFrom.ChestsNearTheLight;
-            ChestRules rules = Settings.Rules(nearLight ? Settings.LightChestRange.Value : Settings.ChestRange);
+            ChestRules rules = Settings.Rules(nearLight ? Settings.LightChestReach : Settings.ChestRange);
             List<Container> candidates = nearLight ? ChestFinder.Find(fed.Position, rules) : Counts.ChestsNearHim(rules.Range);
             var taking = new Taking(candidates, rules.LeaveOne, rules.UseReserved);
             Tally tally = Counts.For(fed);

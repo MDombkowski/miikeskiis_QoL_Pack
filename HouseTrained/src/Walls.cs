@@ -152,6 +152,119 @@ namespace HouseTrained
             return fences;
         }
 
+        private static readonly HashSet<Door> DoorsSeen = new HashSet<Door>();
+        private static readonly Collider[] Near = new Collider[64];
+        private static float[] ringMet = new float[16];
+
+        /// <summary>
+        /// With the Hoarstone's guarding (card B26): whether a door or gate of the pen around a point stands open. The pen's
+        /// own ring is where its looks meet its walls: along each of <paramref name="directions"/> level directions, at the
+        /// pen test's three heights, the nearest piece that fences a pen within <paramref name="reach"/>. A door within 3 m
+        /// of a meeting point is one of its pen's (a closed gate is met itself); an open gate lets its look through, so
+        /// where a look meets nothing, the ring is taken as far off as its neighbours' walls, and a door within 3 m of that
+        /// counts too. Open when its record says so (state 1 or -1, research B section 6). Small queries only, never one
+        /// over the whole pen, which a dense base would fill (code review 1, m5; the last look).
+        /// </summary>
+        internal static bool OpenDoorInRing(Vector3 here, float floor, float reach, int directions)
+        {
+            if (ringMet.Length < directions)
+            {
+                ringMet = new float[directions];
+            }
+            for (int i = 0; i < directions; i++)
+            {
+                HealRules.Direction(i, directions, out float x, out float z);
+                ringMet[i] = FirstPenWall(here, floor, new Vector3(x, 0f, z), reach);
+            }
+            DoorsSeen.Clear();
+            try
+            {
+                float height = floor + HealRules.LookHeights[HealRules.LookHeights.Length / 2];
+                for (int i = 0; i < directions; i++)
+                {
+                    HealRules.Direction(i, directions, out float x, out float z);
+                    float met = ringMet[i];
+                    if (met >= 0f && OpenDoorNear(new Vector3(here.x + x * met, height, here.z + z * met)))
+                    {
+                        return true;   // a gate the look met (closed ones are; an open leaf can be too)
+                    }
+                    // An opening: a look that met nothing, or a wall much farther than the ring on both sides (through
+                    // the gate to a farther wall). The ring there is where the nearest looks on each side, up to two
+                    // away, met the walls (the last look: a wide gate lets two looks through).
+                    float before = NearestMet(i, -1, directions), after = NearestMet(i, 1, directions);
+                    if (before < 0f || after < 0f || (met >= 0f && met <= Mathf.Max(before, after) + 3f))
+                    {
+                        continue;
+                    }
+                    float ring = (before + after) / 2f;
+                    if (OpenDoorNear(new Vector3(here.x + x * ring, height, here.z + z * ring)))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            finally
+            {
+                DoorsSeen.Clear();
+            }
+        }
+
+        // The distance the nearest look on one side, up to two directions away, met a wall at (-1: none did).
+        private static float NearestMet(int index, int step, int directions)
+        {
+            for (int k = 1; k <= 2; k++)
+            {
+                float met = ringMet[((index + step * k) % directions + directions) % directions];
+                if (met >= 0f)
+                {
+                    return met;
+                }
+            }
+            return -1f;
+        }
+
+        // An open door within 3 m of a point.
+        private static bool OpenDoorNear(Vector3 at)
+        {
+            int count = Physics.OverlapSphereNonAlloc(at, 3f, Near, PieceMask, QueryTriggerInteraction.Ignore);
+            for (int j = 0; j < count && j < Near.Length; j++)
+            {
+                Door door = Near[j] != null ? Near[j].GetComponentInParent<Door>() : null;
+                if (door == null || !DoorsSeen.Add(door) || !IsWall(Near[j]))
+                {
+                    continue;
+                }
+                ZNetView view = door.GetComponent<ZNetView>();
+                ZDO record = view != null && view.IsValid() ? view.GetZDO() : null;
+                if (record != null && record.GetInt(ZDOVars.s_state) != 0)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // How far a level look meets a piece that fences a pen, at the pen test's three heights (a rail fence lets one
+        // through): the nearest, or -1 for none within reach.
+        private static float FirstPenWall(Vector3 here, float floor, Vector3 way, float reach)
+        {
+            float nearest = float.MaxValue;
+            foreach (float height in HealRules.LookHeights)
+            {
+                Vector3 start = new Vector3(here.x, floor + height, here.z);
+                int count = Physics.RaycastNonAlloc(start, way, Hits, reach, PieceMask, QueryTriggerInteraction.Ignore);
+                for (int i = 0; i < count && i < Hits.Length; i++)
+                {
+                    if (Hits[i].distance < nearest && IsPenWall(Hits[i].collider))
+                    {
+                        nearest = Hits[i].distance;
+                    }
+                }
+            }
+            return nearest < float.MaxValue ? nearest : -1f;
+        }
+
         /// <summary>The terrain's height under a point (the game's own ground height: the terrain alone, never a piece),
         /// or <paramref name="otherwise"/> where there is none.</summary>
         internal static float TerrainAt(Vector3 point, float otherwise) =>

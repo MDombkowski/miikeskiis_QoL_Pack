@@ -1,6 +1,6 @@
 # House Trained
 
-Tames that behave at home. Three parts, each with its own switch: your tames stop breaking your buildings (every tame out of the box, or only the kinds you list), creatures' area attacks hurt the creatures around them, and your tames stay in their pens: no climbing out on each other's backs, heads kept out of the walls, no biting the wall at an enemy outside, and no standing at the wall all day.
+Tames that behave at home. Each part has its own switch: your tames stop breaking your buildings (every tame out of the box, or only the kinds you list), creatures' area attacks hurt the creatures around them, your tames stay in their pens (no climbing out on each other's backs, heads kept out of the walls, no biting the wall at an enemy outside, no standing at the wall all day), heal faster there and eat from your hand, every tame follows you as a wolf does, and, with the Hoarstone mod, tames keep to your base's ground and guard it.
 
 **Out of the box every part is on** (since 0.1.1, miikeskii's own settings). Each part changes the game your friends already play: switch off any you don't want. An older settings file still at an old default moves to the new one once; a setting you changed stays as you set it.
 
@@ -34,7 +34,7 @@ Tames that behave at home. Three parts, each with its own switch: your tames sto
 One switch for the part, and one for each of its four points, all on once the part is on. "Which tames" is every tame out of the box. "What counts as a wall" is pieces players built (or any building piece).
 
 1. **Kept in** ("Pens: kept in"):
-   - A tame never counts another creature as ground, so it can't walk up a neighbour's flank, rest on its back, or climb out over a wall from a stack. One left on another creature for a second is nudged off (at 5 m/s out of the box).
+   - A tame never counts another creature it stands on as ground, so it can't rest on a neighbour's back or climb out over a wall from a stack. A creature it only bumps at the side, and a player (a friend at its legs, feeding it or getting on), change nothing. One left on another creature for a second is nudged off (at 5 m/s out of the box), at most three times in ten seconds.
    - It can't climb onto a building piece by an edge higher than its own step above the bottom of its body (0.6 m for the Lox, 0.3 m for wolves, boars, hens, asksvin and moose), so it can't walk up onto a fence, a wall or a chest. Floors, stairs and ramps still carry it.
    - A newborn, or an egg, lands on its parent's side of a fence or wall, not inside it or beyond it.
    - A calf growing up, or a chick hatching, that would start inside a wall is moved out of it, toward its side.
@@ -49,11 +49,44 @@ One switch for the part, and one for each of its four points, all on once the pa
    - A tame caught near a spawner (boars from runestones and abandoned farms) stops running back toward its old home, and wanders around itself rather than around it. A wolf told to stay keeps its spot.
    - "How far tames wander" scales the game's own range.
 
+### Healing in pens ("Pens: healing")
+
+- **A hurt tame inside a pen gets back 10% of its full health a minute** (a setting), hungry or not, on top of the game's own healing. Only a pen counts: fences, walls, gates, stakes, poles and beams players built close it in on almost every side (two open directions of sixteen allowed, out of the box), within 40 m. Out in the open it never applies.
+
+### Feeding from the hand ("Feeding from the hand")
+
+- **Look at your tame (or its saddle) and press the hotbar key of a food it eats** (a Cloudberry, Barley or Flax for a Lox): it eats one, as if it had found it on the ground, and a meal from the hand heals 20% of its full health (a setting). Only when it's hungry, out of the box; a tame that won't eat keeps your food back and says why. When a friend's game looks after the tame, that game feeds it.
+- **A tame hungry for a long while may heal to full at once.** That is the game's own healing, not this mod's: a tame's slow healing stops while it's hungry, and once it eats, from the ground or from your hand, all the healing it missed comes back at its next heal, a moment later.
+
+### Following ("Every tame follows and stays")
+
+- **E on any of your tames makes it follow you, and E again makes it stay**, as the game lets you do with wolves: boars, Lox, hens, asksvin, moose. It's the game's own command, kept with the creature, so it follows you on a friend's game too, even one without this mod.
+- **Its text says what E does:** [E] Follow, or [E] Stay while it follows (the game says [E] Pet, on wolves too). The pet still happens.
+- **On a saddle, E rides**, as in the game: point at the creature itself (its head or flank) to make it follow. On a saddled asksvin the saddle covers most of its body, so aim at its head, or set a key for the saddle ("Follow or stay, at a saddle").
+- **The staffs' summons** (the Dead Raiser's skeletons, the spirit callers' animals) follow their summoner by themselves and are left as they are, unless "The staffs' summons too" is on.
+- **While a tame follows you, "Tames in pens" leaves it alone**, so it can follow you up a step or into a house; told to stay, it's under its rules again, and its spot is kept as a wolf's is.
+- **With this part switched off**, E still makes a tame that follows you stay. Before removing the mod, tell your tames to stay: without it, E only pets a tame that isn't a wolf, so it can't be told to stop following.
+- A follower doesn't come through a portal with you, as in the game: it waits where you left it and follows again when you come back near.
+
+### With the Hoarstone ("Tames keep to a Hoarstone's ground")
+
+**Only while the Hoarstone mod is on** (in miikeskii's QoL Pack, or its own release); its section's title in F1 says so, and whether it is.
+
+- **A tame on the ground of a settlement with a Hoarstone stays on it:** it wanders only there, and walks back in when it ends up outside (pushed, fled, or after a fight). "The ground" is the settlement's shape that the Hoarstone keeps monsters from spawning in.
+- **It leaves only to fight** an enemy (as far as the game lets it chase), then walks back in, **or to follow you** (each a setting, on). Told to stay out there, it stays, as in the game.
+- **Return to base** (Left Alt + E, shown on a tame off the ground that has a home to go to): it stops following and walks back to the ground it came from, or to the nearest Hoarstone's.
+- **Tames guard the ground:** a tame on it goes for an enemy anywhere on it, not only one it sees or hears, if it can walk there. A tame in a pen goes only while a door or gate of its pen is open (a setting: never, through an open gate, always); a tame told to stay keeps its spot. Deer and other harmless animals are left alone unless you switch them in.
+- **Each game decides for the tames it looks after:** the game of the player nearest them, which must run House Trained and Hoarstone for any of this. With nobody near, tames stand still, as in the game.
+
+### Tames that die or go missing ("Write tames' deaths and removals to the log")
+
+- On out of the box, it only writes: a line in the game's log (`BepInEx\LogOutput.log`) whenever one of the world's tames dies on your game (its kind, name, place and what hit it last), and whenever any game removes a tame from the world (and whose game it was). If a tame goes missing, the log says what became of it.
+
 ## Good to know
 
 - **Each game decides for the creatures it runs.** A creature's AI, its attacks and its physics run on one computer, usually the first player near it, or its rider. So a friend's game decides for the creatures it runs, by its own settings. A friend without this mod sees the game's own behaviour from the creatures their game runs.
 - **Out of the box every part is on.** Switch off the parts you don't want; every setting works at once.
-- **Switched off, it leaves nothing behind:** every part goes back to the game's rules at once, and what it changed on attacks under way, area objects and projectiles in the world is put back (as each friendly fire switch is switched off, too). Nothing is ever written into the world or into a creature.
+- **Switched off, it leaves nothing behind** (but a tame still following: tell it to stay first, see Following): every part goes back to the game's rules at once, and what it changed on attacks under way, area objects and projectiles in the world is put back (as each friendly fire switch is switched off, too). Only three things are ever written on a tame: the game's own follow or stay (its command), a mark that it was told to stay, and, with the Hoarstone, the place on the ground it goes back to; a game without this mod ignores the last two.
 - **Not everything can be caught:** an area object with triggers hits a creature on that creature's own game, and on a game that didn't create it, it carries no attacker. Those hits stay as in the game. With a share set, the game adds a flat amount to every creature's hit after it on a world whose world level is raised.
 - **It is also part of miikeskii's QoL Pack,** the bundle of all miikeskii's Valheim mods. With the bundle installed, this separate copy stands aside and does nothing, and says so in the log; you can remove it.
 
@@ -73,6 +106,7 @@ A mod that switches idle tames' AI off inside bases (Skarif's ValheimPerformance
 
 - BepInExPack for Valheim
 - Jötunn, the Valheim library
+- For "With the Hoarstone": the Hoarstone mod (in miikeskii's QoL Pack, or its own release)
 
 ## Installing
 
@@ -83,9 +117,12 @@ A mod that switches idle tames' AI off inside bases (Skarif's ValheimPerformance
 
 Open the settings in game with a configuration manager (shudnal's ConfigurationManager opens with F1): they sit under one heading, "House Trained", each part behind a title row that opens and closes it. They are kept in `BepInEx\config\modprojects.housetrained.cfg`, which appears after the first start; in the bundle, in its own file, in the sections "House Trained" and "House Trained - <part>".
 
+The lists of tames and creatures have a **Pick** button beside their text box there, which opens a window of everything the list can hold, each with its picture: a click puts a thing on the list or takes it off. The text box stays for typing.
+
 | Part | Setting | Default | What it does |
 |---|---|---|---|
 | | Enabled | on | The whole mod. |
+| | Write tames' deaths and removals to the log | on | Only writes; changes nothing. |
 | Tames spare buildings | Tames spare buildings | **on** | The part's switch. |
 | | Which tames | EveryTame | EveryTame or TheList. |
 | | The list | Lox | Names separated by commas: as the game shows them, prefab names or $ tokens. |
@@ -138,6 +175,38 @@ Open the settings in game with a configuration manager (shudnal's ConfigurationM
 | | Ignore a far-away spawn point | on | |
 | | … farther than × the wander range | 2 | The tame's own range. |
 | | How far tames wander, % | 100 | 25 to 200. |
+| Pens: healing | Tames heal faster in pens | on | |
+| | Healing in a pen, % a minute | 10 | Of full health. |
+| | How far its pen's walls may be, m | 40 | |
+| | Open directions allowed | 2 | Of sixteen around the tame. |
+| | Show the healing numbers | on | |
+| | Write healing to the log | off | For testing. |
+| Feeding from the hand | Feed a tame from the hand | on | |
+| | When | OnlyWhenHungry | Or AnyTime. |
+| | When a tame won't eat | KeepItAndSayWhy | Or EatItYourself. |
+| | Also wild creatures being tamed | off | |
+| | A meal from the hand heals, % of full health | 20 | 0 to 100; 0, as in the game. |
+| Following | Every tame follows and stays | **on** | E: follow, E again: stay. |
+| | Which tames | EveryTame | Or TheList (wolves always follow). |
+| | The list | Lox | |
+| | The staffs' summons too | off | |
+| | Follow or stay, at a saddle | None | A key, at a saddle where E rides. |
+| | Say Follow or Stay on a tame | on | In place of [E] Pet. |
+| | Pens' rules leave followers alone | on | |
+| With the Hoarstone | Tames keep to a Hoarstone's ground | **on** | Only while Hoarstone is on. |
+| | Which tames | EveryTame | Or TheList; never the staffs' summons. |
+| | The list | Lox | |
+| | … they may leave it to fight (and come back) | on | Off: an enemy off the ground is let go of. |
+| | … they may leave it while following you | on | Off: they wait at the edge. |
+| | "Return to base" | on | |
+| | "Return to base" key | Left Alt + E | On a tame off the ground, or its saddle. |
+| | Tames guard the ground | on | |
+| | Tames in a pen guard it | ThroughAnOpenGate | Or Never, Always. |
+| | How near a pen's walls are, m | 20 | 5 to 60. |
+| | … against harmless animals too | off | Deer and the like. |
+| | How far they go for an enemy, m | 0 | 0, anywhere on the ground; up to 300. |
+| | Also settlements without a Hoarstone | off | |
+| | Write what it does to the log | off | For testing. |
 
 ## If something goes wrong
 

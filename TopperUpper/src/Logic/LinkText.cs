@@ -30,9 +30,10 @@ namespace TopperUpper.Logic
     /// A station's links as one line of text in its own network record (card A77, decision 5): "l1|i:piece_chest_wood@120,
     /// 3050,-4510|o:piece_chest@…", a version word, then each link, input or output, its chest's prefab and its place in
     /// centimetres. A chest found within 5 cm of that place, of that prefab, is the one; a chest rebuilt in the same spot is
-    /// linked again; one moved by a building mod is lost. Another player's game wrote the text in a friend's world, so it
-    /// is read strictly: plain prefab names and whole numbers only; a text with another version word or anything it can't
-    /// read takes no links and is never rewritten until he links anew.
+    /// linked again; one moved by a building mod is lost. A chest may be a station's input and its output at once (card
+    /// B11, his ask: "there could be a chest that does both"): it then has a link of each kind. Another player's game
+    /// wrote the text in a friend's world, so it is read strictly: plain prefab names and whole numbers only; a text with
+    /// another version word or anything it can't read takes no links and is never rewritten until he links anew.
     /// </summary>
     internal static class LinkText
     {
@@ -77,7 +78,12 @@ namespace TopperUpper.Logic
                     readable = false;
                     return new List<Link>();
                 }
-                links.Add(link);
+                // A second link of the same role for the same chest (an older version's switch of a chest that is both,
+                // review m1) is the same link: read once, so it never counts twice toward MostEach.
+                if (!links.Exists(each => each.Output == link.Output && each.SamePlace(link)))
+                {
+                    links.Add(link);
+                }
             }
             return links;
         }
@@ -118,16 +124,16 @@ namespace TopperUpper.Logic
             Z = (int)Math.Round(z * 100.0, MidpointRounding.AwayFromZero),
         };
 
-        /// <summary>What pressing the link key's E (<paramref name="output"/> false) or Left Shift + E (true) on a chest does to
-        /// the links: links it in that role, switches it over from the other role, or unlinks it if it already has that
-        /// role. Returns what became of it, and changes nothing when that role is full (MostEach) or the text would be too
-        /// long.</summary>
+        /// <summary>What pressing E (<paramref name="chest"/>'s Output false) or Left Shift + E (true) on a chest while
+        /// linking does to the links: links it in that role if it hasn't it, or unlinks that role if it has; its other role
+        /// stays as it was, so a chest may be both input and output (card B11). Returns what became of it, and changes
+        /// nothing when that role is full (MostEach) or the text would be too long.</summary>
         internal static LinkChange Toggle(List<Link> links, Link chest)
         {
-            int found = links.FindIndex(each => each.SamePlace(chest));
-            if (found >= 0 && links[found].Output == chest.Output)
+            // Every link of that role there goes: a friend's older Topper-Upper (0.1.0, 0.2.0) switching a chest that is both
+            // could leave two of the same (review m1).
+            if (links.RemoveAll(each => each.SamePlace(chest) && each.Output == chest.Output) > 0)
             {
-                links.RemoveAt(found);
                 return LinkChange.Unlinked;
             }
             int same = 0;
@@ -142,36 +148,40 @@ namespace TopperUpper.Logic
             {
                 return LinkChange.Full;
             }
-            var next = new List<Link>(links);
-            if (found >= 0)
-            {
-                next.RemoveAt(found);
-            }
-            next.Add(chest);
+            var next = new List<Link>(links) { chest };
             if (Write(next).Length > MaxLength)
             {
                 return LinkChange.Full;
             }
             links.Clear();
             links.AddRange(next);
-            return found >= 0 ? LinkChange.Switched : LinkChange.Linked;
+            return LinkChange.Linked;
         }
 
-        /// <summary>The link a chest of this prefab at this place answers to, or null.</summary>
-        internal static Link Find(IList<Link> links, string prefab, double x, double y, double z)
+        /// <summary>The roles a chest of this prefab at this place has among the links: an input, an output, both or
+        /// neither.</summary>
+        internal static void RolesOf(IList<Link> links, string prefab, double x, double y, double z, out bool input, out bool output)
         {
+            input = false;
+            output = false;
             if (links == null)
             {
-                return null;
+                return;
             }
             foreach (Link link in links)
             {
                 if (link.Is(prefab, x, y, z))
                 {
-                    return link;
+                    if (link.Output)
+                    {
+                        output = true;
+                    }
+                    else
+                    {
+                        input = true;
+                    }
                 }
             }
-            return null;
         }
 
         internal static int CountOf(IList<Link> links, bool output)
@@ -219,12 +229,41 @@ namespace TopperUpper.Logic
         }
     }
 
-    /// <summary>What a press on a chest did to a station's links.</summary>
+    /// <summary>What a press on a chest did to a station's links (in the role pressed).</summary>
     internal enum LinkChange
     {
         Linked,
-        Switched,
         Unlinked,
         Full,
+    }
+
+    /// <summary>The words for linking (card B11), on plain values, so they can be checked without the game: every line
+    /// short, each on its own, so the message fits the screen even before the kit fits it (card B14).</summary>
+    internal static class LinkWords
+    {
+        /// <summary>What a chest is to the station: "its input", "its output", "its input and its output", or null.</summary>
+        internal static string Role(bool input, bool output) =>
+            input && output ? "its input and its output" : input ? "its input" : output ? "its output" : null;
+
+        /// <summary>The message when linking starts.</summary>
+        internal static string Start(string station, string use, string alt, string done) =>
+            $"Linking the {station}'s chests\n" +
+            $"{use} on a chest: it takes from that chest\n" +
+            $"{alt} + {use}: it puts what it makes there\n" +
+            $"{done} at the {station} when you're done";
+
+        /// <summary>The message after a press: what the chest is now, then the station's links in all.</summary>
+        internal static string After(string station, bool output, LinkChange change, bool input, bool isOutput, string summary)
+        {
+            string role = Role(input, isOutput);
+            string said = change == LinkChange.Unlinked
+                ? $"No longer the {station}'s {(output ? "output" : "input")}"
+                : $"Linked as the {station}'s {(output ? "output" : "input")}";
+            if (role != null && (input && isOutput || change == LinkChange.Unlinked))
+            {
+                said += $"\nThis chest: {role}";
+            }
+            return string.IsNullOrEmpty(summary) ? said : said + "\n" + summary;
+        }
     }
 }

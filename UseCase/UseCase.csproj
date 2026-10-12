@@ -18,7 +18,7 @@
     <TargetFramework>net472</TargetFramework>
     <AssemblyName>UseCase</AssemblyName>
     <RootNamespace>UseCase</RootNamespace>
-    <Version>0.1.3</Version>
+    <Version>0.2.0</Version>
     <!-- Keep the private repo's commit id out of the DLL's version text. -->
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <LangVersion>10.0</LangVersion>

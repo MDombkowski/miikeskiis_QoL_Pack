@@ -26,7 +26,7 @@ namespace UseCase
 
         internal const string Name = "Use Case";
 
-        internal const string Version = "0.1.3";
+        internal const string Version = "0.2.0";
 
         private static Module current;
 
@@ -73,6 +73,7 @@ namespace UseCase
             Seasons.Resolve(missingOptional);
             Folds.RebuildList = ManagerLink.Rebuild();   // null with a Jötunn too old to ask
             Seen.Folder = Paths.ConfigPath;
+            QoLMods.ListPicker.Lists.Resolve(missingOptional);
         }
 
         internal override void Update()

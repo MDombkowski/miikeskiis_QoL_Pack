@@ -31,6 +31,19 @@ namespace Outfitter.Window
         private static Action<bool> answer;
         private static Action<string> named;
 
+        // The scrolling list a question with items draws in (AskList), where the body's text is for the other questions.
+        private const float ListTop = 56f;
+        private const float ListSide = 24f;
+        private const float ListBottom = 76f;
+        private const float BarWidth = 12f;
+        private const float BlankLine = 10f;
+        private const float IconSize = 26f;
+        private const int FontSize = 16;
+        private static float ListRowWidth => Width - 2f * ListSide - BarWidth - 8f;   // the content's width less its padding
+        private static RectTransform listView;
+        private static RectTransform list;
+        private static ScrollRect listScroll;
+
         // An empty name is an answer too (the box asked with "emptyShows").
         private static bool emptyAnswers;
 
@@ -55,6 +68,103 @@ namespace Outfitter.Window
             named = null;
             Show();
             return ++asked;
+        }
+
+        /// <summary>
+        /// Asks a question with a list of items (the missing-items question, card B21, his feedback of 2026-10-11): the
+        /// heading, a blank line, a bullet per item with its icon to the left of how many and why (its name beside it, or
+        /// only when the pointer rests on the icon, by "Missing items in the pop-up"), a blank line, the lines after the
+        /// list, and the question, in a list that scrolls when it's longer than the pop-up. Answers as <see cref="Ask"/>.
+        /// </summary>
+        internal static int AskList(Equip.ListQuestion question, string yes, string no, Action<bool> then)
+        {
+            Build();
+            Settle(false);
+            title.text = "Outfitter";
+            body.text = string.Empty;
+            field.gameObject.SetActive(false);
+            Ui.SetButtonText(yesButton, yes);
+            Ui.SetButtonText(noButton, no);
+            answer = then;
+            named = null;
+            Show();
+            int number = ++asked;
+            FillList(question);
+            return number;
+        }
+
+        // The list's content, made afresh for each question (shown first: a layout isn't worked out while hidden).
+        private static void FillList(Equip.ListQuestion question)
+        {
+            listView.gameObject.SetActive(true);
+            DrawerUi.Clear(list);
+            // With a gamepad there's no pointer to rest on an icon: the names show beside them (the review of 0.6.0).
+            bool namesBeside = Settings.MissingList == null || Settings.MissingList.Value == MissingListLook.IconAndName || ZInput.IsGamepadActive();
+            ListText(question.Heading, TextAnchor.UpperCenter);
+            DrawerUi.Row(list, BlankLine);
+            foreach (Equip.ListedItem item in question.Items)
+            {
+                ListItem(item, namesBeside);
+            }
+            if (question.MoreLine != null)
+            {
+                ListText(question.MoreLine, TextAnchor.UpperLeft);
+            }
+            DrawerUi.Row(list, BlankLine);
+            foreach (string line in question.After)
+            {
+                ListText(line, TextAnchor.UpperCenter);
+            }
+            ListText(question.Prompt, TextAnchor.UpperCenter);
+            LayoutRebuilder.ForceRebuildLayoutImmediate(list);
+            listScroll.verticalNormalizedPosition = 1f;   // from the top
+        }
+
+        // A line of the list's text, wrapped to its width.
+        private static void ListText(string text, TextAnchor align)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return;
+            }
+            Text line = Ui.Label(list, text, 0f, 0f, ListRowWidth, 20f, FontSize, align);
+            line.verticalOverflow = VerticalWrapMode.Overflow;
+        }
+
+        // One item's line: a bullet, its icon (its name on hover), and how many and why (its name too when asked, or when
+        // it has no icon to point at).
+        private static void ListItem(Equip.ListedItem item, bool namesBeside)
+        {
+            Sprite sprite = null;
+            try
+            {
+                sprite = item.Template != null ? item.Template.GetIcon() : null;
+            }
+            catch (Exception)
+            {
+                sprite = null;   // an item whose icon can't be had shows its name instead
+            }
+            bool withName = namesBeside || sprite == null;
+            float textX = IconSize + 26f;
+            float textWidth = ListRowWidth - textX - 4f;
+            var row = new GameObject("Outfitter_MissingRow", typeof(RectTransform));
+            row.transform.SetParent(list, false);
+            Text words = Ui.Label(row.transform, item.Line(withName), textX, 0f, textWidth, 20f, FontSize, TextAnchor.MiddleLeft);
+            float height = Mathf.Max(IconSize + 4f, Mathf.Ceil(words.preferredHeight) + 6f);
+            Ui.Place(words.gameObject, textX, 0f, textWidth, height);
+            row.AddComponent<LayoutElement>().preferredHeight = height;
+            Ui.Label(row.transform, Equip.ListQuestion.Bullet, 4f, 0f, 14f, height, FontSize, TextAnchor.MiddleLeft);
+            if (sprite != null)
+            {
+                GameObject icon = Ui.Box("Outfitter_MissingIcon", row.transform, 20f, (height - IconSize) / 2f, IconSize, IconSize);
+                Image image = icon.AddComponent<Image>();
+                image.sprite = sprite;
+                image.preserveAspect = true;
+                image.raycastTarget = true;   // the pointer resting on it names the item
+                string name = item.Name;
+                Ui.Help(image, () => name);
+                icon.GetComponent<Tip>().Always = true;
+            }
         }
 
         /// <summary>Asks for a name; <paramref name="then"/> gets it (plain, at most 40 characters), or isn't called when he
@@ -121,6 +231,24 @@ namespace Outfitter.Window
             {
                 Settle(true);
             }
+            if (listView != null && listView.gameObject.activeSelf)
+            {
+                float wheel = ZInput.GetMouseScrollWheel();
+                if (wheel != 0f)
+                {
+                    DrawerUi.Wheel(wheel, 3f * (IconSize + 4f), new[] { listScroll });
+                }
+                else if (ZInput.IsGamepadActive())
+                {
+                    // The right stick scrolls it (up: towards the top), 400 pixels a second at full tilt.
+                    float stick = -ZInput.GetJoyRightStickY();
+                    float hidden = list.rect.height - listView.rect.height;
+                    if (Mathf.Abs(stick) > 0.2f && hidden > 0f)
+                    {
+                        listScroll.verticalNormalizedPosition = Mathf.Clamp01(listScroll.verticalNormalizedPosition + stick * 400f * Time.unscaledDeltaTime / hidden);
+                    }
+                }
+            }
             return false;
         }
 
@@ -147,6 +275,7 @@ namespace Outfitter.Window
 
         private static void Show()
         {
+            listView.gameObject.SetActive(false);   // AskList shows it again
             shade.SetActive(true);
             shade.transform.SetAsLastSibling();
             if (!blocking)
@@ -214,6 +343,12 @@ namespace Outfitter.Window
             panel.name = "Outfitter_PopupPanel";
             title = Ui.Label(panel.transform, "Outfitter", 20f, 16f, Width - 40f, 34f, 22, TextAnchor.MiddleCenter, Ui.Orange, bold: true);
             body = Ui.Label(panel.transform, string.Empty, 30f, 56f, Width - 60f, 170f, 16, TextAnchor.UpperCenter);
+            list = DrawerUi.Scroll("Outfitter_PopupList", panel.transform, ListSide, ListTop, Width - 2f * ListSide, Height - ListTop - ListBottom, out listScroll);
+            DrawerUi.List(list, 2f);
+            listView = (RectTransform)listScroll.transform;
+            listView.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0f);   // the wood shows through; it still catches the wheel
+            listScroll.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHide;   // a bar only when it scrolls
+            listView.gameObject.SetActive(false);
             GameObject input = GUIManager.Instance.CreateInputField(panel.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), Vector2.zero,
                                                                     InputField.ContentType.Standard, "Name", 18, Width - 100f, 40f);
             Ui.Place(input, 50f, 150f, Width - 100f, 40f);

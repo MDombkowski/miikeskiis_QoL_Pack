@@ -24,6 +24,9 @@ namespace TopperUpper.Loose
         private static bool running;
         private static bool lost;
 
+        /// <summary>An error lost the pickup for the session (what Topper-Upper tells the server pack: "topperupper.loose").</summary>
+        internal static bool Lost => lost;
+
         /// <summary>At the module's start: the game's members the pickup and the log fix use, each missing one said in the
         /// start log with what that costs (the rest of the mod runs).</summary>
         internal static void Resolve(List<string> missingOptional)

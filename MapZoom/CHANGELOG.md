@@ -2,7 +2,7 @@
 
 ## 0.1.1 (2026-10-06)
 
-- **miikeskii's own setting is the default now** (card A63): 10 scroll notches from fully in to fully out (was 18).
+- **miikeskii's own setting is the default now**: 10 scroll notches from fully in to fully out (was 18).
 - An older settings file moves to the new defaults once, only where it still holds the old default: a setting changed by hand stays as it is (the kit's new `ModuleSettings.MovedDefault`, remembered in a hidden setting, `DefaultsMoved`). The log names what moved.
 
 ## 0.1.0 (2026-09-25)

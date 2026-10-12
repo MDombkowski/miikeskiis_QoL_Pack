@@ -13,6 +13,7 @@ None. Every line of this mod was written for it. The mods below were studied (de
 | Tames not damaging buildings players placed, decided where the hit lands on a piece | [StructureDamageTweaks](https://github.com/Gra-tak/ValheimStructureDamageTweaks), by Gratak | none found | The buildings part, which also stops the hit where it is sent, with its own lists and share; no code taken. |
 | Creatures' attacks hitting their friends, with a damage multiplier | [SolidHitboxes](https://github.com/karkkant/valheim-solid_hitboxes), by Korppis | MIT | The friendly fire part, for area attacks, their area objects and blasts, with prefixes and postfixes only; no code taken. |
 | A tame forgetting the spawn point a spawner gave it | [Valheim Community Patch](https://github.com/MidnightsFX/Valheim-Community-Patch), by MidnightsFX | GPL-3.0 | "Ignore a far-away spawn point", which ignores the point instead of clearing it, so nothing is written to the tame; no code taken. |
+| Any tame following and staying on E, as wolves do | Cartur's Follow Command, OldManKatan's Tames Follow, xtavim's BetterTames, Neobotics' WolfPack (their pages, read for the vault's research on tames in pens) | not looked at | "Following" lets the game's own command reach every tame for the one press; none of their code was read or taken. |
 | The display-hint class for configuration managers: its class name and field names are the convention those managers look for | [BepInEx.ConfigurationManager](https://github.com/BepInEx/BepInEx.ConfigurationManager), by the BepInEx team | LGPL-3.0 | `kit\ConfigurationManagerAttributes.cs` (field names; no code) |
 
 ## Works with, at run time (not shipped here)
@@ -21,8 +22,9 @@ None. Every line of this mod was written for it. The mods below were studied (de
 |---|---|---|---|
 | [Jötunn](https://github.com/Valheim-Modding/Jotunn) 2.30.2 | JotunnLib Team | MIT | Required: its network-compatibility attribute, and asking a configuration manager to redraw its list. |
 | [BepInEx](https://github.com/BepInEx/BepInEx) 5.4.23 | BepInEx team | LGPL-2.1 | The mod loader. |
-| [HarmonyX](https://github.com/BepInEx/HarmonyX) 2.9.0 | BepInEx team | MIT | Patches the game's piece and character damage, its attacks and area objects, creatures' ground contact, sight, targets and wandering. |
+| [HarmonyX](https://github.com/BepInEx/HarmonyX) 2.9.0 | BepInEx team | MIT | Patches the game's piece and character damage, its attacks and area objects, creatures' ground contact, sight, targets, wandering and following, and E and the hover text of a tame and its saddle. |
 | Valheim | Iron Gate | proprietary | Nothing of the game ships here. |
+| Hoarstone (miikeskii's QoL Pack) | miikeskii | GPL-3.0 | "With the Hoarstone" asks it, through the pack's Hoarstone ground part, whether a place is on a settlement's ground and where the nearest Hoarstone is; nothing of it is copied here. |
 
 ## Assets
 

@@ -274,14 +274,14 @@ namespace Terraformer
             switch (Settings.Messages.Value)
             {
                 case MessageChoice.Centre:
-                    player.Message(MessageHud.MessageType.Center, text);
+                    QoLMods.Kit.Say.Center(text);
                     break;
                 case MessageChoice.TopLeft:
-                    player.Message(MessageHud.MessageType.TopLeft, text);
+                    QoLMods.Kit.Say.TopLeft(text);
                     break;
                 default:
                     // Two clicks' steps are said even with Messages off: nothing else shows the first click was taken.
-                    player.Message(MessageHud.MessageType.Center, text);
+                    QoLMods.Kit.Say.Center(text);
                     break;
             }
         }

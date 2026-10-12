@@ -98,6 +98,80 @@ namespace TopperUpper
             return false;
         }
 
+        /// <summary>
+        /// Takes up to <paramref name="amount"/> of an item (by shared name) out of these chests, nearest first, as many
+        /// TakeOne would but a chest at a time (ChestStock.Remove), for the catch-up's whole time at once (card A93).
+        /// What left each chest goes into Removed at once, by world level (Logic.Measure): as many as ChestStock.Remove says
+        /// it took, or, when another mod's handler of the chest's change throws part way, what the chest held before and
+        /// after says left, at most what was asked of it. The caller reads Removed in its finally, so nothing taken is ever
+        /// lost (review F3), and another mod's change to the same item meanwhile is never counted as taken (round two).
+        /// Returns how many were taken.
+        /// </summary>
+        internal int Take(string key, int amount)
+        {
+            int got = 0;
+            if (finished || amount <= 0)
+            {
+                return 0;
+            }
+            foreach (Container chest in chests)
+            {
+                if (got >= amount)
+                {
+                    break;
+                }
+                if (!Holds(chest, key))
+                {
+                    continue;
+                }
+                bool marked = changed.Add(chest);   // first, as TakeOne: a throw inside the take still sends and holds it
+                int want = amount - got;
+                int took = Measure.Take(want, () => Levels(chest, key), () => ChestStock.Remove(chest, key, want, leaveOne, useReserved),
+                    (level, left) => Note(key, level, left));
+                got += took;
+                if (took == 0 && marked)
+                {
+                    changed.Remove(chest);
+                }
+            }
+            return got;
+        }
+
+        /// <summary>What Take has taken, by item and in order: each chest's world levels and amounts.</summary>
+        internal IReadOnlyDictionary<string, List<KeyValuePair<int, int>>> Removed => removed;
+
+        private readonly Dictionary<string, List<KeyValuePair<int, int>>> removed = new Dictionary<string, List<KeyValuePair<int, int>>>(StringComparer.Ordinal);
+
+        private void Note(string key, int level, int amount)
+        {
+            if (!removed.TryGetValue(key, out List<KeyValuePair<int, int>> list))
+            {
+                removed[key] = list = new List<KeyValuePair<int, int>>();
+            }
+            list.Add(new KeyValuePair<int, int>(level, amount));
+        }
+
+        // What a chest holds of an item (by key: its name, and its quality when the key names one), by world level.
+        private static IDictionary<int, int> Levels(Container chest, string key)
+        {
+            ChestStock.Parse(key, out string name, out int quality);
+            var levels = new Dictionary<int, int>();
+            Inventory inventory = chest != null ? chest.GetInventory() : null;
+            if (inventory == null)
+            {
+                return levels;
+            }
+            foreach (ItemDrop.ItemData item in inventory.GetAllItems())
+            {
+                if (item?.m_shared != null && item.m_shared.m_name == name && (quality < 0 || item.m_quality == quality))
+                {
+                    levels.TryGetValue(item.m_worldLevel, out int sum);
+                    levels[item.m_worldLevel] = sum + item.m_stack;
+                }
+            }
+            return levels;
+        }
+
         // Whether a chest holds the item, from its newest copy: reloaded once per feed, and only one whose copy here holds
         // it at all (a chest this game holds is the copy everyone else's follows; one that came back from a friend and
         // reloads later is only missed this time).
@@ -189,10 +263,10 @@ namespace TopperUpper
             switch (Settings.Say.Value)
             {
                 case SayAdded.TopLeft:
-                    MessageHud.instance?.ShowMessage(MessageHud.MessageType.TopLeft, text);
+                    QoLMods.Kit.Say.TopLeft(text, log: true);
                     break;
                 case SayAdded.Centre:
-                    MessageHud.instance?.ShowMessage(MessageHud.MessageType.Center, text);
+                    QoLMods.Kit.Say.Center(text);
                     break;
             }
             if (Settings.LogFeeds.Value)

@@ -77,8 +77,7 @@ namespace Grounded
             if (KeyRules.ToggleStep(ref armed, ref toggledOn, mode, keySet, pressed, released, building, typing, focused, interrupted) &&
                 MessageHud.instance != null)
             {
-                MessageHud.instance.ShowMessage(MessageHud.MessageType.Center,
-                    toggledOn ? "Grounded on: rugs lie on the floor" : "Grounded off");
+                QoLMods.Kit.Say.Center(toggledOn ? "Grounded on: rugs lie on the floor" : "Grounded off");
             }
         }
 

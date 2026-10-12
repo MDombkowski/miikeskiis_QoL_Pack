@@ -1,6 +1,6 @@
 # Credits: Handyman
 
-What this mod borrows, from whom, and under which licence, kept so the mod can be published properly at any time. Recorded on 2026-09-30, from the research on card A44 (2026-09-29) and Map Zoom's credits for the shared parts.
+What this mod borrows, from whom, and under which licence, kept so the mod can be published properly at any time. Recorded on 2026-09-30, from research done on 2026-09-29 and Map Zoom's credits for the shared parts.
 
 ## Code copied in
 

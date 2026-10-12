@@ -18,7 +18,7 @@ namespace PowerWheel
 
         internal const string Name = "PowerWheel";
 
-        internal const string Version = "0.2.0";
+        internal const string Version = "0.2.1";
 
         private static Module current;
 

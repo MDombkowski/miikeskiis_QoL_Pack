@@ -26,6 +26,10 @@ namespace HouseTrained
         /// <summary>The drawer of a part's title row; <paramref name="settings"/> is filled as the part is bound.</summary>
         internal static Action<ConfigEntryBase> For(string part, List<ConfigEntryBase> settings) => entry => Draw(entry, part, settings);
 
+        /// <summary>A title row whose title is worked out each time it's drawn (With the Hoarstone's says whether Hoarstone
+        /// is on now: card B26).</summary>
+        internal static Action<ConfigEntryBase> For(Func<string> title, List<ConfigEntryBase> settings) => entry => Draw(entry, title(), settings);
+
         private static void Draw(ConfigEntryBase entry, string part, List<ConfigEntryBase> settings)
         {
             bool changed = Changed(settings);

@@ -120,6 +120,26 @@ namespace TopperUpper
             }
         }
 
+        /// <summary>The game's Use key as its own hints name it: "E", or a gamepad's button while one is in use (review m4:
+        /// linking reads the game's Use, so its words name that, rebound or not).</summary>
+        internal static string UseName() => Bound("$KEY_Use", "E");
+
+        /// <summary>The game's own "alt" for a press of Use, as its hints name it (Left Shift out of the box).</summary>
+        internal static string AltName() => Bound("$KEY_AltPlace", "Left Shift");
+
+        private static string Bound(string token, string fallback)
+        {
+            try
+            {
+                string name = Localization.instance != null ? Localization.instance.Localize(token) : null;
+                return string.IsNullOrEmpty(name) || name == token ? fallback : name;
+            }
+            catch (Exception)
+            {
+                return fallback;
+            }
+        }
+
         /// <summary>An Alt key is held.</summary>
         internal static bool AltHeld() => Down(KeyCode.LeftAlt) || Down(KeyCode.RightAlt);
 

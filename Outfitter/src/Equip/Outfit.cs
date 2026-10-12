@@ -29,6 +29,11 @@ namespace Outfitter.Equip
         /// </summary>
         internal static Func<string, string, string, Action<bool>, int> Ask;
 
+        /// <summary>The pop-up's way to ask a question with a list of items, each drawn with its icon (the missing-items
+        /// question, card B21): the question, the words of the yes and the no, and what to do with the answer. Null: the
+        /// question is asked as plain text through <see cref="Ask"/>.</summary>
+        internal static Func<ListQuestion, string, string, Action<bool>, int> AskList;
+
         /// <summary>Takes down question n (Ask's number) if it's still showing, unanswered (an equip that ended meanwhile);
         /// set with Ask.</summary>
         internal static Action<int> Dismiss;
@@ -261,7 +266,10 @@ namespace Outfitter.Equip
                         return;
                     }
                     Enter(Stage.Asking, now);
-                    question = Ask(Messages.MissingQuestion(request.Loadout, preview, rules.Mode), "Equip what's here", "Cancel", yes => Answered(yes, preview, true));
+                    Action<bool> then = yes => Answered(yes, preview, true);
+                    question = AskList != null
+                        ? AskList(Messages.MissingList(request.Loadout, preview, rules.Mode), "Equip what's here", "Cancel", then)
+                        : Ask(Messages.MissingQuestion(request.Loadout, preview, rules.Mode), "Equip what's here", "Cancel", then);
                     return;
                 }
                 if (Settings.Confirm.Value && Ask != null)

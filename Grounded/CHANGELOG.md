@@ -1,8 +1,16 @@
 # Changelog
 
+## 0.2.0 (2026-10-11)
+
+- **Lists picked from pictures**: "Rugs" and "Floors" have a Pick button in the settings window (F1): it opens a window of everything the list can hold, each with its picture, where a click puts a thing on the list or takes it off. The typed box stays beside it, and the list is written as the mod reads it, with any names the game doesn't know kept. The window is set in the new section "Lists (every mod)" (its size, its pictures', whether things not found yet show).
+
+## 0.1.1 (2026-10-11)
+
+- **Messages fit the screen**: a message line too wide for your screen is broken at spaces into lines that fit, measured by the game's own text, as every mod of miikeskii's QoL Pack now does.
+
 ## 0.1.0 (2026-10-09)
 
-- **First version**, as a mod of miikeskii's QoL Pack and on its own (card A74, miikeskii's idea and name).
+- **First version**, as a mod of miikeskii's QoL Pack and on its own (miikeskii's idea and name).
 - **Hold Left Alt while placing a rug** and it looks through the rugs already there and lies on the floor piece under the cursor, so many rugs can overlap on one floor instead of each sitting on the last. Anything other than a listed floor behind the rugs (a table, the ground) leaves the game's own placement, as does letting go of the key.
 - **Down to what you see:** on wood and ashwood floors a rug comes down toward the visible planks (the game's own surface is 1.6 to 2.1 cm higher), and a rug drawn above its own centre point comes down toward them, never more than 10 cm below the game's surface.
 - **Kept where the hammer can point at it:** a rug never sinks into the floor's invisible box, since the hammer would then point at (and remove) the floor instead. Thin rugs (wolf, lox, asksvin, moose) and the deer rug stop two or three centimetres above wood floors and about one above stone; the setting "Keep rugs where the hammer can point at them" lets them go all the way down.

@@ -293,13 +293,13 @@ namespace Terraformer
             LargestLift = settings.Bind(part, "LargestLift", 1f,
                 "Largest lift", order--,
                 "The highest Raise ground (precision)'s lift, and the deepest Lower ground (precision)'s depth, can be set, " +
-                "in metres (1 m in AdvancedTerrainModifiers). Each click of the raise still costs the game's two stone.",
+                "in metres. Each click of the raise still costs the game's two stone.",
                 new AcceptableValueRange<float>(0.25f, 8f));
 
             LiftCanDig = settings.Bind(part, "LiftCanDig", false,
                 "Precision raise can dig", order--,
                 "On: Raise ground (precision)'s lift can go below zero, down to minus the largest lift, and then it digs the " +
-                "square down to that depth below the ghost instead. Off: from 0 up, as AdvancedTerrainModifiers.");
+                "square down to that depth below the ghost instead. Off: from 0 up.");
 
             DigDepth = settings.Bind(part, "DigDepth", 0.5f,
                 "Lower ground depth", order--,
@@ -308,13 +308,13 @@ namespace Terraformer
 
             LowerNeedsWorkbench = settings.Bind(part, "LowerNeedsWorkbench", false,
                 "Lower ground needs a workbench", order--,
-                "On: Lower ground and Lower ground (precision) work only near a workbench, as AdvancedTerrainModifiers' " +
-                "Lower ground did. Off: anywhere, as a pickaxe digs.");
+                "On: Lower ground and Lower ground (precision) work only near a workbench. Off: anywhere, as a pickaxe " +
+                "digs.");
 
             LowerDropsStone = settings.Bind(part, "LowerDropsStone", false,
                 "Lower ground drops stone", order--,
                 "On: a click of Lower ground or Lower ground (precision) drops a stone a third of the time, as a pickaxe hit " +
-                "does. Off: never, as AdvancedTerrainModifiers' Lower ground.");
+                "does. Off: never.");
 
             FlattenTo = settings.Bind(part, "FlattenTo", FlattenHeight.Feet,
                 "Flatten to", order--,

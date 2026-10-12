@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using BepInEx.Logging;
 using QoLMods.Kit;
+using QoLMods.ListPicker;
 
 namespace BarNone
 {
@@ -21,7 +22,7 @@ namespace BarNone
 
         internal const string Name = "Bar None";
 
-        internal const string Version = "0.2.2";
+        internal const string Version = "0.3.0";
 
         private static Module current;
 
@@ -81,6 +82,7 @@ namespace BarNone
         {
             GameHooks.Resolve(missing, missingOptional);
             Rivals.Check();
+            Lists.Resolve(missingOptional);
         }
 
         /// <summary>Every frame while the module runs, also while switched off: the rivals looked for again once every plugin

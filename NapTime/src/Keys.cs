@@ -1,0 +1,81 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using BepInEx.Configuration;
+using UnityEngine;
+
+namespace NapTime
+{
+    /// <summary>
+    /// Nap Time's second key, read through the game's own input (ZInput, as the pack's other mods read theirs: House
+    /// Trained's Keys). ZInput throws for a key missing from the game's own key map, and a friend may pick one in F1: such a
+    /// key reads as not held, and is named in the log once. Never throws, so it's safe in a patch's body too.
+    /// </summary>
+    internal static class Keys
+    {
+        private static readonly HashSet<string> Unreadable = new HashSet<string>(StringComparer.Ordinal);
+
+        /// <summary>True while the key's modifiers are held, with the key itself down or just pressed (the game's own use
+        /// key fires the bed on its press, so the second key's main key is checked by its press or hold alike).</summary>
+        internal static bool Held(KeyboardShortcut key)
+        {
+            if (key.MainKey == KeyCode.None)
+            {
+                return false;
+            }
+            string name = key.ToString();
+            if (Unreadable.Contains(name))
+            {
+                return false;
+            }
+            try
+            {
+                bool main = ZInput.GetKey(key.MainKey, false) || ZInput.GetKeyDown(key.MainKey, false);
+                return main && key.Modifiers.All(modifier => ZInput.GetKey(modifier, false));
+            }
+            catch (Exception)
+            {
+                Unreadable.Add(name);
+                Module.Warn($"The key \"{name}\" in Nap Time's settings can't be read by the game (it isn't in the game's own key " +
+                            "map), so it does nothing. Pick another one.");
+                return false;
+            }
+        }
+
+        /// <summary>The key as the game's hints write one: "Left Alt + E"; empty for none.</summary>
+        internal static string Text(KeyboardShortcut key)
+        {
+            if (key.MainKey == KeyCode.None)
+            {
+                return string.Empty;
+            }
+            var parts = new List<string>();
+            foreach (KeyCode code in key.Modifiers.Concat(new[] { key.MainKey }))
+            {
+                parts.Add(Spaced(code));
+            }
+            return string.Join(" + ", parts);
+        }
+
+        // "LeftAlt" as "Left Alt", "Alpha1" as "1".
+        private static string Spaced(KeyCode code)
+        {
+            string name = code.ToString();
+            if (name.StartsWith("Alpha", StringComparison.Ordinal) && name.Length == 6)
+            {
+                return name.Substring(5);
+            }
+            var spaced = new StringBuilder();
+            for (int i = 0; i < name.Length; i++)
+            {
+                if (i > 0 && char.IsUpper(name[i]) && !char.IsUpper(name[i - 1]))
+                {
+                    spaced.Append(' ');
+                }
+                spaced.Append(name[i]);
+            }
+            return spaced.ToString();
+        }
+    }
+}

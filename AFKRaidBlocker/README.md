@@ -7,6 +7,7 @@ Made with AI. Step away from Valheim without coming back to a base flattened by 
 - **You're away** after 5 minutes without moving, pressing a key, touching the mouse or a gamepad (a setting, 1 to 60 minutes, or never).
 - **Sit or lie down to go away at once.** The Sit key, /sit, /rest or /relax: you're away as soon as you sit or lie down, and back when you stand up (or, lying down, when a hit knocks you up). A chair or a bed can count too (settings, off at first).
 - **While you're away, raids don't start on you.** The game picks where a raid starts from the players at a base; you're left out of that pick until you're back, while nobody near you is playing. A short line on screen says so as you go and as you come back.
+- **An AFK sign on your screen** the whole time you're away, at the top, over the inventory, the crafting menu, the map and every other window; it goes the moment you're back.
 - **Only when everyone near you is away.** While a friend within 96 m (a raid's reach; a setting) is still playing, or doesn't have this mod, raids can start on you as usual, and reach you both. A raid already under way goes on.
 - **Back at once**: away by the minutes, at your first movement, key press or real mouse movement (a key left held down counts once, as it's pressed); sitting or lying down, when you stand up, whatever you press meanwhile. Dying doesn't bring you back: the game respawns you by itself.
 - **A mark for your friends** (a setting, off at first): while you're away, friends who have this mod see "(AFK)" beside your name over your head.
@@ -34,7 +35,7 @@ Open the settings in game with a configuration manager (shudnal's ConfigurationM
 
 | Setting | Default | What it does |
 |---|---|---|
-| Enabled | on | Off: raids come to you as usual at once, and your mark goes. |
+| Enabled | on | Off: raids come to you as usual at once, and your mark and AFK sign go. |
 | Away after this many minutes | 5 | 1 to 60, or 0 for never (then only sitting or lying down makes you away). |
 | What counts as being there | Movement, keys and the mouse | Gamepads too. Or "Movement only": you can then look around or open the map and still go away. Keys and the mouse count only while the game's window has the focus. |
 | Sitting or lying down by an emote counts | on | Your way of saying you've stepped away. |
@@ -44,7 +45,9 @@ Open the settings in game with a configuration manager (shudnal's ConfigurationM
 | Sitting or lying makes you away | At once | Or "After the same minutes" there. |
 | What's held off while you're away | Raids that need a base | Or "Every random event", the wolves of the mountains and plains included. |
 | Someone still playing within (m) lets raids come | 96 | A raid's reach; up to 128. It counts the players your game has loaded around you, and anyone farther who shares their position on the map. 0: raids are held off whoever is near. |
-| A message going away and coming back | In the middle of the screen | Or top left, or none. |
+| Show the AFK sign | on | A small "AFK" sign at the top of your screen while you're away, over every window. It hides while you hide the game's HUD (Ctrl+F3). |
+| Show the away and back messages | on | Off: no line on screen as you go away or come back. |
+| Where the away and back messages show | In the middle of the screen | Or top left, or none. |
 | Others see you're away | off | A mark beside your name for friends who have this mod. |
 | Show other players' away mark | on | |
 | The away mark's text | AFK | Shown in brackets, in grey. |

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using BepInEx.Logging;
 using QoLMods.Kit;
+using QoLMods.ListPicker;
 
 namespace Grounded
 {
@@ -19,7 +20,7 @@ namespace Grounded
 
         internal const string Name = "Grounded";
 
-        internal const string Version = "0.1.0";
+        internal const string Version = "0.2.0";
 
         private static Module current;
 
@@ -55,7 +56,11 @@ namespace Grounded
 
         internal override void BindSettings(ModuleSettings settings) => Settings.Bind(settings);
 
-        internal override void Resolve(List<string> missing, List<string> missingOptional) => GameHooks.Resolve(missing, missingOptional);
+        internal override void Resolve(List<string> missing, List<string> missingOptional)
+        {
+            GameHooks.Resolve(missing, missingOptional);
+            Lists.Resolve(missingOptional);
+        }
 
         internal override void Update()
         {

@@ -129,7 +129,7 @@ namespace Outfitter.Stands
                 "Pointing at a marked stand: its gear comes to you and the loadout goes on, the rest from the chests nearby (as " +
                 "Outfitter's window does), and what you wore goes home (below). The same key again, once it's on you, hangs it " +
                 "back on the stand. While this key is held, E doesn't also take everything off the stand. Left Alt + E as " +
-                "Reserve Stock's key on chests; Wardrobe and QuickswapArmorstand use it on stands too (switch one off).");
+                "Reserve Stock's key on chests; another armour-stand mod may use it on stands too (switch one off).");
             SaveKey = b.Add(Part, "SaveKey", new KeyboardShortcut(KeyCode.E, KeyCode.LeftAlt, KeyCode.LeftShift), "Save what I carry and wear to a stand",
                 "Pointing at an armour stand: what you carry and wear becomes a loadout in Outfitter's list, and the stand its " +
                 "stand. On a stand that already holds your loadout it asks to save over it (or to make it an ordinary stand " +

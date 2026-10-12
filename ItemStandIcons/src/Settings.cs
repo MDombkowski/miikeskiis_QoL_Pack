@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using BepInEx.Configuration;
 using QoLMods.ItemStands;
 using QoLMods.Kit;
+using QoLMods.ListPicker;
 using UnityEngine;
 
 namespace ItemStandIcons
@@ -230,9 +231,8 @@ namespace ItemStandIcons
                 "no free spot (the name and the amount fill them), so a mark covers part of them.");
 
             Rule = Bind(settings, general, StandShare.KeyRule, StandCheck.GameCheck, "Which items count", 40,
-                "GameCheck: the game's own check on each stand, so a mod that lets more items onto stands (such as Item " +
-                "Stand All Items) shows too. StandListsOnly: only the stands' own lists and each item's model, as the " +
-                "game has them without such a mod.");
+                "GameCheck: the game's own check on each stand, so items another mod lets onto stands show too. " +
+                "StandListsOnly: only the stands' own lists and each item's model, as the game has them without such a mod.");
 
             Stands = Bind(settings, general, StandShare.KeyStands, StandFit.DefaultStands, "Stands that count", 39,
                 "The stands asked, by their prefab names, separated by commas: itemstand is the wall stand, itemstandh " +
@@ -248,7 +248,38 @@ namespace ItemStandIcons
             ArmorStands = Bind(settings, general, StandShare.KeyArmorStands, StandFit.DefaultArmorStands, "Armor stands that count", 37,
                 "The armor stands asked, by their prefab names, separated by commas: ArmorStand is the game's own. Empty: " +
                 "no armor stand counts, so no item gets the mannequin.");
+
+            // The Pick buttons in F1 (card B03): the two lists picked from pictures of the game's pieces that hold items or
+            // wear gear, their text written as StandFit.Names reads it (split at commas, semicolons or spaces, exact case).
+            PickerSettings.Bind(settings);
+            Lists.Attach(Stands, StandList("The item stands asked.", IsStand, null));
+            Lists.Attach(ArmorStands, StandList("The armor stands asked.", IsArmorStand, "no armor stand counts"));
         }
+
+        // As StandFit counts them (review 1): an item stand that doesn't take its one item by itself, give nothing back or
+        // grant a power; an armor stand with slots.
+        private static bool IsStand(Thing thing)
+        {
+            ItemStand stand = thing.Prefab != null ? thing.Prefab.GetComponentInChildren<ItemStand>(true) : null;
+            return stand != null && StandFit.Counts(stand);
+        }
+
+        private static bool IsArmorStand(Thing thing)
+        {
+            ArmorStand armor = thing.Prefab != null ? thing.Prefab.GetComponentInChildren<ArmorStand>(true) : null;
+            return armor != null && armor.m_slots != null && armor.m_slots.Count > 0;
+        }
+
+        private static ListSpec StandList(string says, System.Func<Thing, bool> holds, string emptyMeans) => new ListSpec
+        {
+            Module = Module.Name,
+            Kinds = new[] { ThingKind.Pieces },
+            Format = new ListFormat { Separators = ",;", WhitespaceSeparates = true, Joiner = ", ", IgnoreCase = false },
+            Holds = holds,
+            Says = says,
+            EmptyMeans = emptyMeans,
+            Warn = text => Module.Log?.LogWarning(text),
+        };
 
         private static ConfigEntry<T> Bind<T>(ModuleSettings settings, string part, string key, T value, string name, int order,
                                               string description, AcceptableValueBase range = null)

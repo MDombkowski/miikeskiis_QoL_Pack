@@ -30,6 +30,25 @@ namespace Outfitter.Equip
         /// needs nearby (FoodPick.Assign).</summary>
         internal int FoodStatAtLeast = 1;
         internal bool KeepWornWhenMissing;
+
+        /// <summary>"What I wear that the loadout doesn't": ComesOff (card B18): what he wears that the loadout doesn't
+        /// wear, and that goes away by the mode, comes off whether or not a chest takes it (what no chest takes stays with
+        /// him); false: 0.5's way, only into a chest or for something in its place (card A34, decisions 37 and 47).</summary>
+        internal bool OffWithoutChest;
+
+        /// <summary>"A belt or trinket the loadout doesn't name": ComesOff (card B18, the review's major finding: a
+        /// Megingjord coming off away from chests takes 150 off his carry weight mid-fight); false (KeepWearing, the
+        /// default): 0.5's way for utility-slot pieces.</summary>
+        internal bool UtilityOffWithoutChest;
+
+        /// <summary>Whether this worn piece comes off when no chest takes it and nothing takes its place: a belt or a
+        /// trinket by its own setting, anything else by "What I wear that the loadout doesn't".</summary>
+        internal bool OffWithoutChestFor(ItemDrop.ItemData item) =>
+            item != null && IsUtility(item.m_shared.m_itemType) ? UtilityOffWithoutChest : OffWithoutChest;
+
+        /// <summary>A utility-slot piece: a belt (Utility) or a trinket.</summary>
+        internal static bool IsUtility(ItemDrop.ItemData.ItemType type) =>
+            type == ItemDrop.ItemData.ItemType.Utility || type == ItemDrop.ItemData.ItemType.Trinket;
         internal bool QuickSlotsInFullyReplace;
         internal PlacesKept Places;
         internal CellTaken Taken;
@@ -61,6 +80,8 @@ namespace Outfitter.Equip
             FavouritesGo = Settings.FavouritesGo.Value,
             FoodStatAtLeast = Settings.FoodStatAtLeast.Value,
             KeepWornWhenMissing = Settings.KeepWornWhenMissing.Value,
+            OffWithoutChest = Settings.NotWorn.Value == WornNotInLoadout.ComesOff,
+            UtilityOffWithoutChest = Settings.UtilityNotWorn.Value == WornUtilityNotInLoadout.ComesOff,
             QuickSlotsInFullyReplace = Settings.QuickSlotsInFullyReplace.Value,
             Places = Settings.Places.Value,
             Taken = Settings.Taken.Value,

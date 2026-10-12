@@ -1,6 +1,6 @@
 # Credits: PowerWheel
 
-What this mod borrows, from whom, and under which licence, kept so the mod can be published properly at any time. Recorded on 2026-10-09, from the research on card A75 (`research/2026-10-09_powerwheel-forsaken-power-wheel.md` in the project's vault) and Map Zoom's credits for the shared parts.
+What this mod borrows, from whom, and under which licence, kept so the mod can be published properly at any time. Recorded on 2026-10-09, from research done that day and Map Zoom's credits for the shared parts.
 
 ## Code copied in
 

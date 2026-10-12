@@ -18,10 +18,19 @@ namespace QoLMods.Chests
     /// counts as one the server hands him (ChestClaims.OutsideHandOut): a claim waits for that hand-out, every two
     /// seconds, rather than claiming the chest itself. The range he wants is the largest of the modules' ranges that are
     /// on (ChestUser.Reach).
+    /// Since miikeskii's Server-Side QoL Pack (card A92), Far Fetched is one of its modules, and answers the pack's own
+    /// handshake (ServerPack): this game says the range it wants there ("chests.reach"), and the server pack's Far Fetched
+    /// answers what it grants ("granted") and its own limit ("reach"). Once the server pack answers that it runs Far
+    /// Fetched (and it's on), the grant is that answer and this hello stops; while it hasn't (a server running Far Fetched
+    /// 0.1.0 alone, or the server pack without it), this hello and its reply work exactly as before, and if the server
+    /// pack stops answering that it runs one, this hello is said again at once.
     /// </summary>
     internal static class ServerReach
     {
         internal const string HelloName = "modprojects.farfetched.hello";
+
+        /// <summary>Far Fetched's id in the server pack's answer.</summary>
+        internal const string FarFetchedId = "FarFetched";
 
         private const string ReplyPrefix = "modprojects.farfetched.reach.";
 
@@ -62,7 +71,8 @@ namespace QoLMods.Chests
         // The modules using the service (ChestHooks.Resolve): the range he wants is theirs.
         private static readonly List<ChestUser> Users = new List<ChestUser>();
 
-        private static ZRoutedRpc registeredOn;
+        // The connection the reply handler is registered on (the game's routed messages, ServerPack.Connection's kind).
+        private static object registeredOn;
         private static bool replying;
         private static float saidAt = float.NegativeInfinity;
         private static float saidReach = -1f;
@@ -75,6 +85,9 @@ namespace QoLMods.Chests
         private static float serverLimit;
         private static bool toldOfGrant;
 
+        // Whether the grant came from the server pack's Far Fetched at the last turn (Tick).
+        private static bool viaPack;
+
         /// <summary>A module that uses the service (from ChestHooks.Resolve).</summary>
         internal static void Uses(ChestUser user)
         {
@@ -84,17 +97,58 @@ namespace QoLMods.Chests
             }
         }
 
+        /// <summary>What the chest service says to the server pack: the range he wants (see WantedText).</summary>
+        internal const string ReachKey = "chests.reach";
+
         /// <summary>The range Far Fetched on this server grants him now, in metres; 0 when it isn't there (or is off, or
-        /// hasn't replied yet).</summary>
+        /// hasn't replied yet): the server pack's Far Fetched when the server pack runs one, else a lone Far Fetched's reply
+        /// to this hello (GrantOf). Worked out afresh each time: a caller asking for many places reads it once.</summary>
         internal static float Granted
         {
             get
             {
-                ZNet net = ZNet.instance;
-                ZNetPeer server = net != null && !net.IsServer() ? net.GetServerPeer() : null;
-                return on && server != null && server.m_uid == grantedBy && registeredOn != null && registeredOn == ZRoutedRpc.instance ? granted : 0f;
+                long server = ServerPack.ServerId();
+                bool replied = server != 0L && server == grantedBy && registeredOn != null && ReferenceEquals(registeredOn, ServerPack.Connection());
+                return GrantOf(ServerPack.Runs(FarFetchedId), ServerPack.Value(FarFetchedId, "granted"), ServerPack.Said(ReachKey), on, granted, replied);
             }
         }
+
+        /// <summary>
+        /// The grant, from its two sources (plain values, for the scratch harness): when the server pack runs Far Fetched
+        /// (<paramref name="packRuns"/>), its answer "granted" (a number in the invariant culture; none, or one that can't
+        /// be read, grants nothing), at most ChestSettings.MostRange, and at most the range this copy itself last said
+        /// (<paramref name="saidReach"/>, its "chests.reach"): the server pack's Far Fetched grants a game the most any of
+        /// its plugins asked for, so with two plugins carrying the service at different ranges this copy's grant is never
+        /// more than its own ask, as each hello's grant was in the old protocol, and so never more than the server's real
+        /// hand-out for it. Otherwise a lone Far Fetched's reply to this hello, while it's on and came from this server on
+        /// this connection (<paramref name="replied"/>).
+        /// </summary>
+        internal static float GrantOf(bool packRuns, string packGranted, string saidReach, bool replyOn, float replyGranted, bool replied)
+        {
+            if (packRuns)
+            {
+                return Math.Min(RangeOf(packGranted), RangeOf(saidReach));
+            }
+            return replyOn && replied ? replyGranted : 0f;
+        }
+
+        /// <summary>A range the server pack answered, in metres: a positive number in the invariant culture, at most
+        /// ChestSettings.MostRange; 0 for none or one that can't be read.</summary>
+        internal static float RangeOf(string text)
+        {
+            if (string.IsNullOrEmpty(text) ||
+                !float.TryParse(text, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float range) ||
+                float.IsNaN(range) || float.IsInfinity(range) || range <= 0f)
+            {
+                return 0f;
+            }
+            return Math.Min(range, ChestSettings.MostRange);
+        }
+
+        /// <summary>The range he wants, as the server pack's hello says it ("chests.reach"): the largest range among the
+        /// modules that are on, in metres, in the invariant culture ("R", as the server pack writes its numbers); "0" while
+        /// none is.</summary>
+        internal static string WantedText() => Wanted().ToString("R", System.Globalization.CultureInfo.InvariantCulture);
 
         /// <summary>
         /// Whether Far Fetched on this server hands him this chest (see the class): only a placed chest, as Far Fetched
@@ -106,55 +160,43 @@ namespace QoLMods.Chests
         /// </summary>
         internal static bool Covers(Container chest, bool loose)
         {
-            if (chest == null || chest.GetType() != typeof(Container) || chest.GetComponent<Piece>() == null ||
-                chest.GetComponent<TombStone>() != null || ChestClaims.OnVehicle(chest))
-            {
-                return false;
-            }
             ZNet net = ZNet.instance;
-            return net != null && CoversSpot(ChestFinder.Where(chest), net.GetReferencePosition(), loose ? Margin : -Margin);
+            return Placed(chest) && net != null && CoversSpot(ChestFinder.Where(chest), net.GetReferencePosition(), loose ? Margin : -Margin, Granted);
         }
 
         /// <summary>The same as Covers, with no margin either way: whether the grant reaches this placed chest from where he
         /// stands now.</summary>
         internal static bool CoversExactly(Container chest)
         {
-            if (chest == null || chest.GetType() != typeof(Container) || chest.GetComponent<Piece>() == null ||
-                chest.GetComponent<TombStone>() != null || ChestClaims.OnVehicle(chest))
-            {
-                return false;
-            }
             ZNet net = ZNet.instance;
-            return net != null && CoversSpot(ChestFinder.Where(chest), net.GetReferencePosition(), 0f);
+            return Placed(chest) && net != null && CoversSpot(ChestFinder.Where(chest), net.GetReferencePosition(), 0f, Granted);
         }
 
         /// <summary>
         /// Whether Far Fetched keeps this chest with him steadily: a placed chest (as Covers), inside the grant (no margin)
         /// from where he stands now and from every position of his noted in the last SteadyFor seconds and a round trip,
         /// with notes covering all that time. For a chest he owns beyond any active area the game gives, where only Far
-        /// Fetched keeps it with him: this game changes it only then (ChestClaims.MayChange).
+        /// Fetched keeps it with him: this game changes it only then (ChestClaims.MayChange). The grant is read once for
+        /// all those places.
         /// </summary>
         internal static bool SteadilyCovers(Container chest)
         {
-            if (!CoversExactly(chest))
-            {
-                return false;
-            }
             ZNet net = ZNet.instance;
-            if (net == null || Recent.Count == 0)
+            if (!Placed(chest) || net == null || Recent.Count == 0)
             {
                 return false;
             }
+            float grant = Granted;
             Vector3 at = ChestFinder.Where(chest);
             float now = Time.realtimeSinceStartup;
             float span = SteadyFor + ChestClaims.PingSeconds();
-            if (now - Recent[0].Key < span || !CoversSpot(at, net.GetReferencePosition(), 0f))
+            if (now - Recent[0].Key < span || !CoversSpot(at, net.GetReferencePosition(), 0f, grant))
             {
                 return false;   // not noted for long enough yet (just arrived), or out of the grant now
             }
             foreach (KeyValuePair<float, Vector3> each in Recent)
             {
-                if (now - each.Key <= span && !CoversSpot(at, each.Value, 0f))
+                if (now - each.Key <= span && !CoversSpot(at, each.Value, 0f, grant))
                 {
                     return false;
                 }
@@ -162,11 +204,17 @@ namespace QoLMods.Chests
             return true;
         }
 
-        // Whether the grant, widened by extra metres (narrowed when negative), reaches this spot from where he stood at
-        // centre (see Covers): across the ground, and in the zones his game keeps loaded around that spot.
-        private static bool CoversSpot(Vector3 at, Vector3 centre, float extra)
+        // A placed chest, as Far Fetched counts them: the game's own chest, built as a piece, never a cart's, a ship's or a
+        // gravestone (card A69, review 1, M2).
+        private static bool Placed(Container chest) =>
+            chest != null && chest.GetType() == typeof(Container) && chest.GetComponent<Piece>() != null &&
+            chest.GetComponent<TombStone>() == null && !ChestClaims.OnVehicle(chest);
+
+        // Whether the grant (granted, read by the caller), widened by extra metres (narrowed when negative), reaches this
+        // spot from where he stood at centre (see Covers): across the ground, and in the zones his game keeps loaded around
+        // that spot.
+        private static bool CoversSpot(Vector3 at, Vector3 centre, float extra, float granted)
         {
-            float granted = Granted;
             float reach = granted + extra;
             if (granted <= 0f)
             {
@@ -194,8 +242,8 @@ namespace QoLMods.Chests
             return ZoneSystem.instance.ZonesWithinRadius(mine, its, near);
         }
 
-        /// <summary>Every frame, from ChestClaims.Tick: registers for replies on each new connection, and says hello when
-        /// due.</summary>
+        /// <summary>Every frame, from ChestClaims.Tick (after ServerPack's turn): registers for replies on each new
+        /// connection, notes his position, and says hello when due, unless the server pack runs Far Fetched.</summary>
         internal static void Tick()
         {
             ZRoutedRpc rpc = ZRoutedRpc.instance;
@@ -203,7 +251,7 @@ namespace QoLMods.Chests
             {
                 return;
             }
-            if (rpc != registeredOn)
+            if (!ReferenceEquals(rpc, registeredOn))
             {
                 Register(rpc);
             }
@@ -215,6 +263,21 @@ namespace QoLMods.Chests
                 return;
             }
             Note(net.GetReferencePosition());
+            bool packRuns = ServerPack.Runs(FarFetchedId);
+            Follow(packRuns);
+            if (packRuns)
+            {
+                // The server pack's Far Fetched grants through the pack's own handshake: this hello stops.
+                float grant = Granted;
+                if (!toldOfGrant && grant > 0f)
+                {
+                    toldOfGrant = true;
+                    float limit = RangeOf(ServerPack.Value(FarFetchedId, "reach"));
+                    ServerPack.Info($"[QoL Mods chest service] The server runs Far Fetched ({ServerPack.Version}): it hands you the chests your " +
+                                    $"game has loaded up to {grant:0} m away (its own limit is {limit:0} m), so they answer at once. Said once a connection.");
+                }
+                return;
+            }
             float wanted = Wanted();
             float now = Time.realtimeSinceStartup;
             bool same = Mathf.Abs(wanted - saidReach) < 0.5f && server.m_uid == saidTo;
@@ -267,10 +330,45 @@ namespace QoLMods.Chests
             return most;
         }
 
+        /// <summary>
+        /// Each turn (Tick), whether the server pack runs Far Fetched now (<paramref name="packRuns"/>). Coming to it: a lone
+        /// Far Fetched's reply is set aside (its grant forgotten, and Reply ignores any while the pack runs it), so it can't
+        /// come back for a moment when the pack stops. Leaving it: this hello is said again at once, from nothing.
+        /// </summary>
+        internal static void Follow(bool packRuns)
+        {
+            if (packRuns == viaPack)
+            {
+                return;
+            }
+            viaPack = packRuns;
+            on = false;
+            granted = 0f;
+            if (!packRuns)
+            {
+                saidAt = float.NegativeInfinity;   // back to this hello at once
+            }
+        }
+
         // A new connection: its reply handler, and everything known of the last one forgotten.
         private static void Register(ZRoutedRpc rpc)
         {
-            registeredOn = rpc;
+            NewConnection(rpc);
+            try
+            {
+                rpc.Register<ZPackage>(ReplyName, Reply);
+                replying = true;
+            }
+            catch (ArgumentException)
+            {
+                // The same plugin twice: its first copy gets the replies (and says the hello).
+            }
+        }
+
+        /// <summary>A new connection (or the harness starting afresh): everything known of the last one forgotten.</summary>
+        internal static void NewConnection(object connection)
+        {
+            registeredOn = connection;
             replying = false;
             Recent.Clear();
             on = false;
@@ -280,27 +378,26 @@ namespace QoLMods.Chests
             saidReach = -1f;
             saidTo = 0L;
             toldOfGrant = false;
-            try
-            {
-                rpc.Register<ZPackage>(ReplyName, OnReply);
-                replying = true;
-            }
-            catch (ArgumentException)
-            {
-                // The same plugin twice: its first copy gets the replies (and says the hello).
-            }
+            viaPack = false;
         }
 
-        // Far Fetched's reply: the protocol it speaks, whether it is on, the range it grants him, and its own limit.
-        private static void OnReply(long sender, ZPackage package)
+        /// <summary>
+        /// A lone Far Fetched's reply to this hello (by the reply name, or from the harness): the protocol it speaks,
+        /// whether it is on, the range it grants him, and its own limit. Only the server's word counts, and none while the
+        /// server pack runs Far Fetched (its grant is the pack's then).
+        /// </summary>
+        internal static void Reply(long sender, ZPackage package)
         {
             try
             {
-                ZNet net = ZNet.instance;
-                ZNetPeer server = net != null && !net.IsServer() ? net.GetServerPeer() : null;
-                if (server == null || sender != server.m_uid)
+                long server = ServerPack.ServerId();
+                if (server == 0L || sender != server || package == null)
                 {
                     return;   // only the server's word counts
+                }
+                if (ServerPack.Runs(FarFetchedId))
+                {
+                    return;   // the server pack's Far Fetched grants now; an old hello's reply still on its way is set aside
                 }
                 int protocol = package.ReadInt();
                 bool isOn = package.ReadBool();
@@ -308,18 +405,18 @@ namespace QoLMods.Chests
                 float limit = package.ReadSingle();
                 grantedBy = sender;
                 on = protocol == Protocol && isOn && reach > 0f;
-                granted = on ? Mathf.Min(reach, ChestSettings.MostRange) : 0f;
+                granted = on ? Math.Min(reach, ChestSettings.MostRange) : 0f;
                 serverLimit = limit;
                 if (on && !toldOfGrant)
                 {
                     toldOfGrant = true;
-                    ZLog.Log($"[QoL Mods chest service] The server runs Far Fetched: it hands you the chests your game has loaded " +
-                             $"up to {granted:0} m away (its own limit is {serverLimit:0} m), so they answer at once. Said once a connection.");
+                    ServerPack.Info($"[QoL Mods chest service] The server runs Far Fetched: it hands you the chests your game has loaded " +
+                                    $"up to {granted:0} m away (its own limit is {serverLimit:0} m), so they answer at once. Said once a connection.");
                 }
             }
             catch (Exception error)
             {
-                ZLog.LogWarning($"[QoL Mods chest service] Far Fetched's reply couldn't be read: {error.Message}");
+                ServerPack.Warning($"[QoL Mods chest service] Far Fetched's reply couldn't be read: {error.Message}");
             }
         }
     }

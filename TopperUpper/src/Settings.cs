@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using BepInEx.Configuration;
 using QoLMods.Chests;
 using QoLMods.Kit;
+using QoLMods.ListPicker;
 using TopperUpper.Logic;
 using UnityEngine;
 
@@ -68,8 +69,12 @@ namespace TopperUpper
     /// QoL Pack, in the bundle's file, "Topper-Upper" and "Topper-Upper - &lt;part&gt;". A configuration manager's window (F1)
     /// lists them all under the one heading, each part behind a title row that opens and closes it (Folds; his pick, one
     /// heading per mod). Every one is read when it's used, so a change works at once. Keys are permanent from 0.1.0. Out of
-    /// the box: lights and fires on, stations off (his pick, until his friend switches the server's feeding off).
-    /// The order band 200 to 249 and the part "Loose items" belong to the loose-item pickup (BindLooseItems).
+    /// the box: lights and fires, stations and loose items on (0.4.0, card B05: A77's next-pack step, his pick, once the
+    /// server's own feeding and pickup were gone; a file still holding the old off moves once, MovedDefault step 1).
+    /// The distances measured from a light, a station or an item, and the light range, take 0 for the range in "Chests
+    /// (every mod)" (card B05, his question; OrShared).
+    /// The order band 200 to 249 and the part "Loose items" belong to the loose-item pickup (BindLooseItems); the band 290
+    /// to 300 and the part "Catch-up" to the catch-up (BindCatchUp, 0.2.0).
     /// </summary>
     internal static partial class Settings
     {
@@ -118,6 +123,7 @@ namespace TopperUpper
         internal static readonly Dictionary<string, ConfigEntry<bool>> StationKinds = new Dictionary<string, ConfigEntry<bool>>();
         internal static ConfigEntry<bool> OtherStations { get; private set; }
         internal static ConfigEntry<float> StationRadius { get; private set; }
+        internal static ConfigEntry<float> StationOutputRadius { get; private set; }
         internal static ConfigEntry<StationTopUp> StationTopUpAt { get; private set; }
         internal static ConfigEntry<bool> FuelOnlyWhileWorking { get; private set; }
         internal static ConfigEntry<bool> TapFermenter { get; private set; }
@@ -150,6 +156,7 @@ namespace TopperUpper
         internal static ConfigEntry<bool> Glow { get; private set; }
         internal static ConfigEntry<Color> InputColour { get; private set; }
         internal static ConfigEntry<Color> OutputColour { get; private set; }
+        internal static ConfigEntry<Color> BothColour { get; private set; }
         internal static ConfigEntry<LinkedFuel> FuelWhenLinkedEmpty { get; private set; }
         internal static ConfigEntry<bool> LinkedKeepOne { get; private set; }
         internal static ConfigEntry<NoOutputChoice> NoLinkedOutput { get; private set; }
@@ -190,21 +197,29 @@ namespace TopperUpper
 
             order = 990;
             FeedLights = Add(ModuleSettings.General, "FeedLights", true, "Feed lights and fires",
-                "Torches, sconces, braziers, fires, the hearth and the hot tub near you are topped up with their fuel from the " +
-                "chests near you, by the rules in \"Lights and fires\" and your reserves. Only the ones your game looks after " +
+                "Torches, sconces, braziers, fires, the hearth and the hot tub within \"Light range\" (Lights and fires) of you " +
+                "are topped up with their fuel from the chests within \"Chest range\" (a few settings below) of you, or near each light (\"Take " +
+                "its fuel from\"), by the rules in \"Lights and fires\" and your reserves. Only the ones your game looks after " +
                 "(the first player near a base looks after it); never from a chest another player's game has.");
-            FeedStations = Add(ModuleSettings.General, "FeedStations", false,
+            FeedStations = Add(ModuleSettings.General, "FeedStations", true,
                 "Feed stations",
                 "Smelters, the blast furnace, the charcoal kiln, the windmill, the spinning wheel, the eitr refinery, the " +
-                "Frigid Kiln, the fermenter, the shield generator and the Frost Foundry are fed from the chests near them by " +
-                "your rules (\"Stations\", \"What each station takes first\", \"Reserves and maximums\"), and what they make " +
-                "is put away (\"Linking and products\"). Off out of the box until the server's own feeding (ServersideQoL's " +
-                "AutoProcess, FeedFromContainers) is switched off, so the two don't feed the same station.");
+                "Frigid Kiln, the fermenter, the shield generator and the Frost Foundry are fed from the chests within " +
+                "\"Input radius around a station\" (Stations) of them by your rules (\"Stations\", \"What each station takes " +
+                "first\", \"Reserves and maximums\"), and what they make is put away (\"Linking and products\"). With " +
+                "miikeskii's Server-Side QoL Pack on the server, the stations of friends without the pack near you can be " +
+                "handed to your game to feed as your own. The catch-up (\"Catch-up\" below) works only with this on. Off: " +
+                "stations work as in " +
+                "the game. Keep it off while another mod feeds your stations.");
+            // On since 0.4.0 (card B05): a file written while it was off out of the box moves once (MODULES.md rule 4).
+            settings.MovedDefault(FeedStations, false, 1);
             // 0 follows the shared range ("Chests (every mod)"), as the pack's other chest mods do (card A69).
             Range = Add(ModuleSettings.General, "Range", 0f, "Chest range (metres)",
-                "How far from you a chest may be for lights' fuel (\"chests near you\") and for counting your reserves. " +
+                "How far from you a chest may be for lights' fuel (\"chests near you\") and for counting your reserves, and how " +
+                "far from you loose items are picked up. " +
                 ChestSettings.OwnRangeNote,
                 new AcceptableValueRange<float>(0f, ChestSettings.MostRange));
+            ChestSettings.Reaches("Topper-Upper (lights' fuel near you, reserves, loose items near you)", "Chest range (metres)", Range);   // card B13
             Say = Add(ModuleSettings.General, "SayAdded", SayAdded.Off, "Say what was added",
                 "Off: it works quietly. TopLeft: a line at the top left for each feed (\"Added 10 Iron scrap to the Smelter\"). " +
                 "Centre: the same in the middle of the screen.");
@@ -233,8 +248,8 @@ namespace TopperUpper
 
             BeginFold(LightsPart, 950);
             LightRange = Add(LightsPart, "LightRange", 50f, "Light range (metres around you)",
-                "Lights and fires within this distance of you are topped up.",
-                new AcceptableValueRange<float>(5f, 128f));
+                "Lights and fires within this distance of you are topped up. " + ZeroFollows("from you"),
+                new AcceptableValueRange<float>(0f, 128f));
             foreach (Kind kind in Kinds.Lights)
             {
                 LightKinds[kind.Prefab] = Add(LightsPart, kind.Key, kind.Default, kind.Name,
@@ -251,11 +266,13 @@ namespace TopperUpper
                 "RoomForOne: as soon as one more fuel fits (a torch stays nearly full). HalfEmpty: once it's half empty. Empty: " +
                 "only once it's out.");
             LightFuelFrom = Add(LightsPart, "LightFuelFrom", FuelFrom.ChestsNearYou, "Take its fuel from",
-                "ChestsNearYou: chests within the chest range of you. ChestsNearTheLight: only chests within the range below " +
-                "of the light itself.");
+                "ChestsNearYou: chests within Topper-Upper's own \"Chest range\" (at the top) of you; 0 there is the range in \"" + ChestSettings.Section +
+                "\". ChestsNearTheLight: only chests within \"Range around the light\" (below) of the light itself.");
             LightChestRange = Add(LightsPart, "LightChestRange", 10f, "Range around the light (metres)",
-                "With ChestsNearTheLight: how near the light a chest must be.",
-                new AcceptableValueRange<float>(1f, 50f));
+                "With ChestsNearTheLight: how near the light a chest must be. " + ZeroFollows("from the light"),
+                new AcceptableValueRange<float>(0f, 50f));
+            ChestSettings.Elsewhere("Topper-Upper, " + LightsPart, "Range around the light (metres)", LightChestRange,
+                                    "from the light, with \"Take its fuel from\" ChestsNearTheLight");   // card B13
             WhenShort = Add(LightsPart, "WhenShort", ShortFirst.TheEmptiest, "When fuel is short, first",
                 "TheEmptiest: the light with the least fuel left is topped up first. TheNearest: the one nearest you.");
             LightKey = Add(LightsPart, "LightKey", new KeyboardShortcut(KeyCode.E, KeyCode.LeftAlt), "Key: feed this one or leave it alone",
@@ -277,10 +294,22 @@ namespace TopperUpper
             }
             OtherStations = Add(StationsPart, "OtherStations", false, "Other mods' stations",
                 "Stations another mod adds (its own smelters and kilns) are fed as the game's own are.");
-            StationRadius = Add(StationsPart, "StationRadius", 10f, "Chest radius around a station (metres)",
-                "A station takes from chests within this distance of it (unless it has input chests linked), and puts what it " +
-                "made into chests within it. ServersideQoL used 4.",
-                new AcceptableValueRange<float>(1f, 50f));
+            // Card B30, his call: the input and the output each have their own radius, so the input can stay small while
+            // what a station makes is put away from farther. The input keeps the old key (and so a file's value).
+            StationRadius = Add(StationsPart, "StationRadius", 10f, "Input radius around a station (metres)",
+                "A station takes from chests within this distance of it (unless it has input chests linked; then only its " +
+                "fuel can, by \"Fuel when the linked inputs have none\"). What it makes " +
+                "goes by \"Output radius around a station\" below. " + ZeroFollows("from the station"),
+                new AcceptableValueRange<float>(0f, 50f));
+            ChestSettings.Elsewhere("Topper-Upper, " + StationsPart, "Input radius around a station (metres)", StationRadius,
+                                    "from each station, for what it takes");   // card B13
+            StationOutputRadius = Add(StationsPart, "StationOutputRadius", 0f, "Output radius around a station (metres)",
+                "What a station makes is put away into chests within this distance of it, when it has no output chest linked " +
+                "or its linked output is full; which of those chests take it, \"Linking and products\" says (out of the box, " +
+                "only one already holding it or set up for it). " + ZeroFollows("from the station"),
+                new AcceptableValueRange<float>(0f, ChestSettings.MostRange));
+            ChestSettings.Elsewhere("Topper-Upper, " + StationsPart, "Output radius around a station (metres)", StationOutputRadius,
+                                    "from each station, for what it makes");   // card B30
             StationTopUpAt = Add(StationsPart, "StationTopUpAt", StationTopUp.HalfEmpty, "Top up when it has room for",
                 "HalfEmpty: once half its queue is free, then filled up: fewer, larger feeds. RoomForOne: as soon as one fits.");
             FuelOnlyWhileWorking = Add(StationsPart, "FuelOnlyWhileWorking", true, "Fuel only while there's something to process",
@@ -321,28 +350,47 @@ namespace TopperUpper
                 "Items never taken for any light or station, by prefab names, separated by commas.");
             EndFold();
 
+            // The Pick buttons in F1 (card B03): each list picked from pictures of the game's items, a station's own list
+            // from what that station takes, the text written as Logic\Lists reads it (commas or semicolons, any case).
+            PickerSettings.Bind(settings);
+            foreach (KeyValuePair<string, ConfigEntry<string>> first in Firsts)
+            {
+                string station = first.Key;
+                string name = (ModuleSettings.HintsOf(first.Value)?.DispName ?? station).ToLowerInvariant();
+                Lists.Attach(first.Value, ItemList("What the " + name + " takes first: the first gets the room first.",
+                                                   thing => GameThings.Inputs(station).Contains(thing.Name), true, "the game's own order"));
+            }
+            Lists.Attach(KilnWoods, ItemList("The woods the charcoal kiln takes from chests, in order.",
+                                             thing => GameThings.Inputs("charcoal_kiln").Contains(thing.Name), true, "every wood it burns"));
+            Lists.Attach(NeverTake, ItemList("Items never taken for any light or station.", null, false, null));
+
             BeginFold(CountsPart, 810);
             Reserves = Add(CountsPart, "Reserves", "Resin:50, Barley:50, Flax:50, OatSeeds:50", "Keep in reserve",
                 "Items kept back for everything this mod takes, as item:amount by prefab names. \"Resin:50\": torches are " +
-                "topped up only while more than 50 Resin are near you, and never below 50. Barley, Flax and Oat Seeds are " +
-                "kept as seed stock.");
+                "topped up only while more than 50 Resin are near you (\"Count range\" below), and never below 50. Barley, " +
+                "Flax and Oat Seeds are kept as seed stock.");
             Maximums = Add(CountsPart, "Maximums", string.Empty, "Keep at most",
                 "Products not made past an amount, as item:amount by prefab names. \"BlackMetal:120\": scrap stops going into the " +
-                "blast furnace once 120 Black Metal are near you, counting what's queued in stations and lying at their " +
-                "outputs (below), and starts again when you take some.");
+                "blast furnace once 120 Black Metal are near you (\"Count range\" below), counting what's queued in stations " +
+                "and lying at their outputs (below), and starts again when you take some.");
+            Lists.Attach(Reserves, AmountList("Items kept back for everything this mod takes, each with how many.", 50));
+            Lists.Attach(Maximums, AmountList("Products not made past an amount, each with how many.", 100));
             CountWhere = Add(CountsPart, "CountWhere", CountAround.AroundYou, "Count them",
-                "AroundYou: reserves and maximums count the chests near you. AroundEachStation: the chests near each station, " +
-                "for its own feed.");
+                "AroundYou: reserves and maximums count the chests within \"Count range\" (below) of you. AroundEachStation: " +
+                "the chests within \"Count range\" of each station, for its own feed.");
             CountRange = Add(CountsPart, "CountRange", 0f, "Count range (metres)",
-                "How far the count reaches. 0: the chest range (General).",
+                "How far the count reaches. 0: Topper-Upper's own \"Chest range\" (at the top). While \"Use this range in every mod\" (Chests, every " +
+                "mod) is on, that range.",
                 new AcceptableValueRange<float>(0f, ChestSettings.MostRange));
+            ChestSettings.ReachesThrough("Topper-Upper, " + CountsPart, "Count range (metres)", CountRange,
+                                         "Topper-Upper's Chest range");   // card B13
             CountReserved = Add(CountsPart, "CountReserved", true, "Count reserved chests",
                 "Chests reserved with Reserve Stock count toward reserves and maximums (they're never taken from).");
             CountCarried = Add(CountsPart, "CountCarried", false, "Count what you carry",
                 "What you carry counts toward reserves and maximums too.");
             CountStations = Add(CountsPart, "CountStations", true, "Count what stations hold and what lies at their outputs",
-                "For maximums: what's queued in the stations nearby (and a windmill's flour, a fermenter's meads), and what " +
-                "lies at their outputs, counts as made. Off: only the chests count, and a full furnace can overshoot by its " +
+                "For maximums: what's queued in the stations within \"Count range\" (and a windmill's flour, a fermenter's " +
+                "meads), and what lies at their outputs, counts as made. Off: only the chests count, and a full furnace can overshoot by its " +
                 "queue.");
             EndFold();
 
@@ -362,26 +410,31 @@ namespace TopperUpper
             BeginFold(LinksPart, 760);
             LinkKey = Add(LinksPart, "LinkKey", new KeyboardShortcut(KeyCode.J, KeyCode.LeftAlt), "Key: link this station's chests",
                 "Pointing at a station, starts linking its chests: then E on a chest makes it an input (the station takes only " +
-                "from its inputs), Left Shift + E an output (what it makes goes there); the same again unlinks it. The key " +
-                "again at the station, opening a menu, walking 30 m away or a minute without a change ends it.");
+                "from its inputs) or no longer one, Left Shift + E the same for an output (what it makes goes there); a chest " +
+                "can be both. While linking, a chest's hover text says what each key will do. The key again at the station, " +
+                "opening a menu, walking 30 m away or a minute without a change ends it.");
             Glow = Add(LinksPart, "Glow", true, "Linked chests glow",
                 "While you point at a station, and while linking, its linked chests glow (only on your screen).");
             InputColour = Add(LinksPart, "InputColour", new Color(0.2f, 1f, 0.3f, 1f), "Input colour", "The glow of a linked input chest.");
             OutputColour = Add(LinksPart, "OutputColour", new Color(0.3f, 0.6f, 1f, 1f), "Output colour", "The glow of a linked output chest.");
+            BothColour = Add(LinksPart, "BothColour", new Color(1f, 0.75f, 0.2f, 1f), "Input and output colour",
+                "The glow of a chest linked as both the station's input and its output.");
             FuelWhenLinkedEmpty = Add(LinksPart, "FuelWhenLinkedEmpty", LinkedFuel.FromChestsNearby, "Fuel when the linked inputs have none",
                 "A station with linked input chests takes its fuel from them too. FromChestsNearby: when they have none, from " +
-                "the chests near it. OnlyFromTheLinkedChests: never from anywhere else.");
+                "the chests within \"Input radius around a station\" (Stations) of it. OnlyFromTheLinkedChests: never from " +
+                "anywhere else.");
             LinkedKeepOne = Add(LinksPart, "LinkedKeepOne", true, "Linked input chests keep one of each",
                 "One of each item stays in a linked input chest too. Off: it may be emptied.");
             NoLinkedOutput = Add(LinksPart, "NoLinkedOutput", NoOutputChoice.PutAwayLikeTheQuickStack, "Products with no linked output",
-                "PutAwayLikeTheQuickStack: into chests near the station, by the quick stack's rules below. LeaveWhereTheyFall: " +
-                "left on the ground for you.");
+                "PutAwayLikeTheQuickStack: into chests within \"Output radius around a station\" (Stations) of the station, by " +
+                "the quick stack's rules below. LeaveWhereTheyFall: left on the ground for you.");
             LinkedOutputFull = Add(LinksPart, "LinkedOutputFull", FullOutputChoice.PutAwayLikeTheQuickStack, "When the linked output is full",
-                "PutAwayLikeTheQuickStack: the rest into chests near the station. LeaveWhereTheyFall: left on the ground. " +
-                "StopFeedingTheStation: left, and the station isn't fed until its output has room again.");
+                "PutAwayLikeTheQuickStack: the rest into chests within \"Output radius around a station\" (Stations) of the " +
+                "station. LeaveWhereTheyFall: left on the ground. StopFeedingTheStation: left, and the station isn't fed until " +
+                "its output has room again.");
             OnlyWhereHeld = Add(LinksPart, "OnlyWhereHeld", true, "Put away only into chests that already hold it",
                 "As the quick stack: a product goes only into a chest already holding some (or set up to take it). Off: any " +
-                "chest near the station with room.");
+                "chest within the station's output radius with room.");
             FollowSetups = Add(LinksPart, "FollowSetups", true, "Follow chest setups",
                 "Chests set up with StoreStash to take only some things get only those, and get them first.");
             LeaveOthersMarked = Add(LinksPart, "LeaveOthersMarked", true, "Leave chests others marked as theirs alone",
@@ -394,6 +447,9 @@ namespace TopperUpper
                 "away) as soon as it holds some.");
             EndFold();
 
+            // The catch-up's part (0.2.0, card A93), its own band of orders (CatchUp\Settings.CatchUp.cs).
+            BindCatchUp();
+
             // The loose-item pickup's part, its own band of orders (Settings.Loose.cs).
             order = LooseOrderTop;
             BindLooseItems(settings);
@@ -403,8 +459,10 @@ namespace TopperUpper
                 "LeaveThem: not fed. FeedThemAsAHandWould: fed from your chests the way pressing E does, one message to that " +
                 "friend's game per item; if they walk away while it's on its way, that item is lost.");
             StandAside = Add(FriendsPart, "StandAside", true, "Stand aside while the server feeds a station",
-                "A station near you that the server takes over for a moment (ServersideQoL's AutoProcess writes stations that " +
-                "way) is left alone for a minute, so the two don't write it at the same instant.");
+                "A station near you whose game turns to nobody for a moment (a mod on the server that feeds stations takes " +
+                "them over that way) is left alone for a minute, so the two don't write it at the same instant. miikeskii's " +
+                "Server-Side QoL Pack hands a station back to the game that had it; only if that player left in the moment " +
+                "it was feeding the station does the station turn to nobody.");
             EndFold();
         }
 
@@ -420,10 +478,53 @@ namespace TopperUpper
         /// <summary>The chest range of you, in metres (its own, or the shared one).</summary>
         internal static float ChestRange => ChestSettings.RangeOf(Range);
 
+        /// <summary>"Light range": how far from him lights and fires are topped up, in metres (card B05: 0 is the shared
+        /// range).</summary>
+        internal static float LightReach => OrShared(LightRange);
+
+        /// <summary>"Range around the light", in metres (0: the shared range, from the light).</summary>
+        internal static float LightChestReach => OrShared(LightChestRange);
+
+        /// <summary>"Input radius around a station": what a station takes from, in metres (0: the shared range, from the
+        /// station).</summary>
+        internal static float StationReach => OrShared(StationRadius);
+
+        /// <summary>"Output radius around a station": where what a station makes is put away, in metres (0: the shared
+        /// range, from the station; card B30).</summary>
+        internal static float StationOutputReach => OrShared(StationOutputRadius);
+
+        /// <summary>"Range from the item to the chest", in metres (0: the shared range, from each item).</summary>
+        internal static float LooseReach => OrShared(LooseRange);
+
+        /// <summary>
+        /// A distance measured from a light, a station or an item (and the light range, from him): its own number of metres
+        /// above 0, at most the farthest any range may reach; 0 (or less) is the range in "Chests (every mod)" (card B05,
+        /// his question "why no 0?"). Unlike a mod's own chest range, a small number is kept as it is (a 2 m radius around
+        /// a station is a real choice), and "Use this range in every mod" leaves it alone: it measures from somewhere
+        /// else, and a 150 m radius for what every station takes from would reach far past its base
+        /// (ChestSettings.Follows.Elsewhere). The output radius is 0 out of the box on purpose (card B30, his "once
+        /// something is output ... I'm more likely to just want that to get put away"): a product goes only into a chest
+        /// that takes it.
+        /// </summary>
+        internal static float OrShared(ConfigEntry<float> own)
+        {
+            float mine = own != null ? own.Value : 0f;
+            if (mine > 0f)
+            {
+                return mine > ChestSettings.MostRange ? ChestSettings.MostRange : mine;
+            }
+            return ChestSettings.SharedRange;
+        }
+
+        /// <summary>The words such a distance's description ends with (ChestSettings' own for a mod's range, measured from
+        /// <paramref name="from"/>).</summary>
+        private static string ZeroFollows(string from) =>
+            "0: the range in \"" + ChestSettings.Section + "\", measured " + from + ". Another number: this mod's own range, in metres.";
+
         /// <summary>The range the reserves and maximums are counted in, in metres.</summary>
-        internal static float CountingRange => CountRange != null && CountRange.Value >= ChestSettings.LeastRange
+        internal static float CountingRange => !ChestSettings.ForEveryModOn && CountRange != null && CountRange.Value >= ChestSettings.LeastRange
             ? Mathf.Min(CountRange.Value, ChestSettings.MostRange)
-            : ChestRange;
+            : ChestRange;   // with "Use this range in every mod" on, the shared range (card B13)
 
         /// <summary>The chest rules as the settings say right now, within <paramref name="range"/> metres. The Obliterator's
         /// container is always left out (Obliterator; code review M2).</summary>
@@ -450,6 +551,37 @@ namespace TopperUpper
         // His own personal chests too (the game's CheckAccess already keeps everyone else's out).
         private static readonly System.Func<Container, bool> SkipObliteratorAndPersonal =
             chest => Obliterator.Is(chest) || chest.m_privacy == Container.PrivacySetting.Private;
+
+        // A list of items for the picker (card B03), written as Logic\Lists' NameList reads it: commas or semicolons, any case.
+        private static ListSpec ItemList(string says, System.Func<Thing, bool> holds, bool ordered, string emptyMeans) => new ListSpec
+        {
+            Module = Module.Name,
+            Kinds = new[] { ThingKind.Items },
+            Format = new ListFormat { Separators = ",;\n\r", Joiner = ", ", Ordered = ordered },
+            Holds = holds,
+            Says = says,
+            EmptyMeans = emptyMeans,
+            Warn = Module.Warn,
+        };
+
+        // A list of items with amounts, as Logic\Lists' ItemAmounts reads it: "name:amount" or "name=amount", 0 or more; an
+        // entry without one is left out by the mod, a name twice keeps its last amount.
+        private static ListSpec AmountList(string says, int newAmount) => new ListSpec
+        {
+            Module = Module.Name,
+            Kinds = new[] { ThingKind.Items },
+            Format = new ListFormat
+            {
+                Separators = ",;\n\r",
+                Joiner = ", ",
+                Amounts = true,
+                AmountMarks = ":=",
+                NewAmount = newAmount,
+                LeastAmount = 0,
+            },
+            Says = says,
+            Warn = Module.Warn,
+        };
 
         /// <summary>Binds one setting of a part, the next order down, as part of the open fold-out (if any). For the
         /// loose-item pickup's part too.</summary>

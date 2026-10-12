@@ -1,6 +1,6 @@
 # Credits: Topper-Upper
 
-What this mod borrows, from whom, and under which licence, kept so the mod can be published properly at any time. Licences as found on 2026-10-09 by the research for card A77.
+What this mod borrows, from whom, and under which licence, kept so the mod can be published properly at any time. Licences as found on 2026-10-09.
 
 ## Code copied in
 

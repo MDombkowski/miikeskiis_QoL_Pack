@@ -1,6 +1,6 @@
 # Credits: Grounded
 
-What this mod borrows, from whom, and under which licence, kept so the mod can be published properly at any time. Licences as recorded on 2026-10-09 (the research for card A74).
+What this mod borrows, from whom, and under which licence, kept so the mod can be published properly at any time. Licences as recorded on 2026-10-09.
 
 ## Code copied in
 

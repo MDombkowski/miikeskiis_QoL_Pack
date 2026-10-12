@@ -915,7 +915,7 @@ namespace AddToCart
                 message += " The last ones weren't taken: another fetch was under way. Fetch again for them.";
             }
             Module.Log.LogInfo(message);
-            Player.m_localPlayer?.Message(MessageHud.MessageType.TopLeft, message);
+            QoLMods.Kit.Say.TopLeft(message);
             bool fetchedAny = result.Moved.Values.Any(amount => amount > 0);
             if (fetchedAny)
             {

@@ -37,12 +37,14 @@ Point at a resource in Valheim and see everything it's used in, and how many: be
 
 Open the settings in game with a configuration manager (shudnal's ConfigurationManager opens with F1). They are kept in `BepInEx\config\modprojects.usecase.cfg`, which appears after the first start; in the bundle, in the sections "Use Case" and "Use Case - …" of its own file. In the window they all sit under the one heading, each part behind a title row that opens it (with shudnal's 1.1.22 or later; with another manager every part shows open).
 
+"Never list these" and "Never show a list for these resources" have a **Pick** button beside their text box there, which opens a window of everything the list can hold, each with its picture: a click puts a thing on the list or takes it off. The text box stays for typing.
+
 | Setting | Default | What it does |
 |---|---|---|
 | Enabled | on | Off takes the panel away at once and the game's tooltip is all that shows; on brings it back. |
 | Show the panel | **on** | The panel itself. |
 | When the panel shows | OnHover | OnHover: with the game's tooltip. WhileKeyHeld: only while the key is held. ToggledByKey: the key switches it on and off (on at first). With no key set, both show it on hover. |
-| The key | none | For the two key choices above, and for unfolding sections when long lists fold. Left Alt is best avoided: MyLittleUI and HexQuickStackStorage use it over items. |
+| The key | none | For the two key choices above, and for unfolding sections when long lists fold. Left Alt is best avoided: StoreStash and other mods use it over items. |
 | Pin key | none | Pressed while the panel shows, it stays after the pointer moves on; pressed again, or once the window it was pinned in closes (the inventory, the trader; for the build panel's costs, once you stop building), it goes. |
 | Key to stop listing an item's uses | none | Pressed while the panel shows, adds the item to "Never show a list for these resources". |
 | **Where it shows:** in the inventory and chests · in the trader's list · on the crafting panel's costs · on the build panel's costs | on | Where the panel appears. |

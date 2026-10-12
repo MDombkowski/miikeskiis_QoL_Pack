@@ -18,9 +18,6 @@ namespace TopperUpper.Loose
     /// </summary>
     internal sealed class GameWorld : ILooseWorld
     {
-        /// <summary>How near a station's output an item counts as the station's (the products' own reach and a margin).</summary>
-        internal const float OutputReach = Products.Reach + 0.5f;
-
         /// <summary>With the game's own list of items missing, how far around him the physics search reaches.</summary>
         internal const float FallbackReach = 64f;
 
@@ -31,7 +28,9 @@ namespace TopperUpper.Loose
         private readonly List<Spot> players = new List<Spot>();
         private readonly List<Eater> eaters = new List<Eater>();
         private readonly HashSet<string> eaten = new HashSet<string>(StringComparer.Ordinal);
-        private readonly List<(Spot At, HashSet<string> Products)> outputs = new List<(Spot At, HashSet<string> Products)>();
+        // The products lying where their station's put-away looks (by instance id: a destroyed item's own equality may match
+        // another destroyed one).
+        private readonly HashSet<int> atOutputs = new HashSet<int>();
         private readonly PickupRules rules = new PickupRules();
         private readonly Collider[] touching = new Collider[16];
         private readonly int[] masks = new int[32];
@@ -131,7 +130,7 @@ namespace TopperUpper.Loose
             {
                 return outcome;
             }
-            float range = Settings.LooseRange.Value;
+            float range = Settings.LooseReach;
             bool onlyWhereHeld = Settings.LooseOnlyWhereHeld.Value;
             bool followSetups = Settings.LooseFollowSetups.Value;
             bool leaveOthersMarked = Settings.LooseLeaveOthersMarked.Value;
@@ -211,13 +210,13 @@ namespace TopperUpper.Loose
             // review n6).
             if (cornerLines.Count > MostCornerLines)
             {
-                MessageHud.instance?.ShowMessage(MessageHud.MessageType.TopLeft, $"Put away {cornerUnits} loose items into {cornerLines.Count} chests");
+                QoLMods.Kit.Say.TopLeft($"Put away {cornerUnits} loose items into {cornerLines.Count} chests", log: true);
             }
             else
             {
                 foreach (string line in cornerLines)
                 {
-                    MessageHud.instance?.ShowMessage(MessageHud.MessageType.TopLeft, line);
+                    QoLMods.Kit.Say.TopLeft(line, log: true);
                 }
             }
             cornerLines.Clear();
@@ -237,7 +236,7 @@ namespace TopperUpper.Loose
             players.Clear();
             eaters.Clear();
             eaten.Clear();
-            outputs.Clear();
+            atOutputs.Clear();
             loadedChests = null;
             cornerLines.Clear();
             cornerUnits = 0;
@@ -293,7 +292,7 @@ namespace TopperUpper.Loose
             if (facts.Body && (facts.Resting || facts.Afloat))
             {
                 facts.InTar = drop.InTar();
-                facts.AtHandledOutput = AtOutput(at, item.m_shared.m_name);
+                facts.AtHandledOutput = atOutputs.Contains(drop.GetInstanceID());
                 facts.NearEater = rules.Fodder && eaten.Contains(item.m_shared.m_name) && Fodder.Near(eaters, at, item.m_shared.m_name);
             }
             return Qualify.Why(facts, rules);
@@ -384,22 +383,12 @@ namespace TopperUpper.Loose
             return masks[layer];
         }
 
-        private bool AtOutput(Spot at, string name)
-        {
-            foreach ((Spot output, HashSet<string> products) in outputs)
-            {
-                if (products.Contains(name) && at.Within(output, OutputReach))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         // The stations whose products the core puts away now (Products.Look's own test): what lies at their outputs is
         // theirs, whatever their settings then do with it (put away, linked, or left where it fell). While a rival feeding
         // mod runs, every station's output is left to it (it may put products away itself), as the rival's warning says
-        // (code review n4).
+        // (code review n4). "At its output" is exactly what the station's put-away looks at (the same search, Lying.At
+        // within Products.Reach), so nothing lies between the two: a margin of 0.5 m here once left a product 1.5 to 2 m
+        // from its output to neither (card B30).
         private void NoteOutputs()
         {
             bool rival = Rivals.Any;
@@ -419,7 +408,14 @@ namespace TopperUpper.Loose
                 {
                     continue;
                 }
-                outputs.Add((SpotOf(output.position), Stations.ProductsOf(fed)));
+                HashSet<string> products = Stations.ProductsOf(fed);
+                foreach (ItemDrop drop in Lying.At(output.position, Products.Reach))
+                {
+                    if (drop != null && drop.m_autoPickup && drop.m_itemData?.m_shared != null && products.Contains(drop.m_itemData.m_shared.m_name))
+                    {
+                        atOutputs.Add(drop.GetInstanceID());
+                    }
+                }
             }
         }
 

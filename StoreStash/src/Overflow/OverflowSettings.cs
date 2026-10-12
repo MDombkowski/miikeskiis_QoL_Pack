@@ -214,8 +214,11 @@ namespace StoreStash
             Range = settings.Bind(Part, "OverflowRange", 0f,
                 "Tidy radius (metres)", 369,
                 "How far from you a chest set up alike may be to take part. 0: quick stack's own search radius (Quick stack, Which chests). " +
-                "\"Which chests\" (Quick stack) counts as for quick stack.",
+                "\"Which chests\" (Quick stack) counts as for quick stack. While \"Use this range in every mod\" (Chests, every " +
+                "mod) is on, that range.",
                 new AcceptableValueRange<float>(0f, QoLMods.Chests.ChestSettings.MostRange));
+            QoLMods.Chests.ChestSettings.ReachesThrough("StoreStash, " + Part + " (tidy)", "Tidy radius (metres)", Range,
+                                                        "StoreStash's Search radius");   // card B13
 
             Carts = settings.Bind(Part, "OverflowCarts", false,
                 "Carts' chests take part", 368,

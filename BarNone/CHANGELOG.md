@@ -1,12 +1,16 @@
 # Changelog
 
+## 0.3.0 (2026-10-11)
+
+- **Lists picked from pictures**: The five lists of pieces (reach, smoke, projectiles, sky and items) and "Items: except these items" have a Pick button in the settings window (F1): it opens a window of everything the list can hold, each with its picture, where a click puts a thing on the list or takes it off. The typed box stays beside it, and the list is written as the mod reads it, with any names the game doesn't know kept. The window is set in the new section "Lists (every mod)" (its size, its pictures', whether things not found yet show).
+
 ## 0.2.2 (2026-10-08)
 
-- **Reaching through pieces works again beside JereKuusela's ESP** (card A50, miikeskii's report of 2026-10-08: he could no longer fuel a fire through a Cage Floor 2x2). ESP gives every building piece a hover text of its own, and Bar None took any piece with a hover text for one you can use, like a gate, which it never reaches through. Now only a piece you can actually use (open, sit on, put something on) stops the reach; gates, doors and shutters still open as before.
+- **Reaching through pieces works again beside JereKuusela's ESP** (miikeskii's report of 2026-10-08: he could no longer fuel a fire through a Cage Floor 2x2). ESP gives every building piece a hover text of its own, and Bar None took any piece with a hover text for one you can use, like a gate, which it never reaches through. Now only a piece you can actually use (open, sit on, put something on) stops the reach; gates, doors and shutters still open as before.
 
 ## 0.2.1 (2026-10-06)
 
-- **miikeskii's own settings are the defaults now** (card A63): reaching through pieces and reaching creatures behind them, smoke passing through, projectiles passing through and enemies' shots too, and beehives and birds' nests, windmills, and the Wisp Fountain and Eternal Pyre seeing the sky through listed pieces, all on out of the box. Items falling through stay off. The smoke and projectile parts still stand aside while JereKuusela's Smoke_Collision or Projectile_Collision is installed.
+- **miikeskii's own settings are the defaults now**: reaching through pieces and reaching creatures behind them, smoke passing through, projectiles passing through and enemies' shots too, and beehives and birds' nests, windmills, and the Wisp Fountain and Eternal Pyre seeing the sky through listed pieces, all on out of the box. Items falling through stay off. The smoke and projectile parts still stand aside while JereKuusela's Smoke_Collision or Projectile_Collision is installed.
 - An older settings file moves to the new defaults once, only where it still holds the old default: a setting changed by hand stays as it is (the kit's new `ModuleSettings.MovedDefault`, remembered in a hidden setting, `DefaultsMoved`). The log names what moved.
 
 ## 0.2.0 (2026-09-30)
@@ -16,7 +20,7 @@
 
 ## 0.1.0 (2026-09-30)
 
-- **First version**, as a mod of miikeskii's QoL Pack and on its own (card A50). Written from scratch to replace JereKuusela's Smoke_Collision and Projectile_Collision; each of its parts stands aside while the matching one of those is installed.
+- **First version**, as a mod of miikeskii's QoL Pack and on its own. Written from scratch to replace JereKuusela's Smoke_Collision and Projectile_Collision; each of its parts stands aside while the matching one of those is installed.
 - **Reach** through see-through pieces: use what's behind a cage wall, a crystal wall or a fence within your usual reach (fuel a fire, open a chest, pick a crop, pick up an item). Gates and anything else you can use are never reached through. Off out of the box.
 - **Smoke** passes through listed pieces, and a fire right under one keeps burning. Off out of the box.
 - **Projectiles** fly through listed pieces, for the shooters switched on (players' by default) and up to a size. Off out of the box.

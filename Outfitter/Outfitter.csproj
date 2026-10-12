@@ -18,7 +18,7 @@
     <TargetFramework>net472</TargetFramework>
     <AssemblyName>Outfitter</AssemblyName>
     <RootNamespace>Outfitter</RootNamespace>
-    <Version>0.5.3</Version>
+    <Version>0.6.1</Version>
     <!-- Keep the private repo's commit id out of the DLL's version text. -->
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <LangVersion>10.0</LangVersion>

@@ -21,7 +21,7 @@ namespace ReserveStock
 
         internal const string Name = "Reserve Stock";
 
-        internal const string Version = "0.1.10";
+        internal const string Version = "0.1.13";
 
         private static Module current;
 

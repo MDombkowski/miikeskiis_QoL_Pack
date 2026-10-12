@@ -27,7 +27,7 @@ namespace Outfitter
 
         internal const string Name = "Outfitter";
 
-        internal const string Version = "0.5.3";
+        internal const string Version = "0.6.1";
 
         private static Module current;
 
@@ -144,6 +144,7 @@ namespace Outfitter
             Eaqs.Find(Log);
             Folds.RebuildList = ManagerLink.Rebuild();   // null with a Jötunn too old to ask
             Outfit.Ask = Window.Popup.Ask;   // the equip's questions (missing items, confirm), for the window and the stands alike
+            Outfit.AskList = Window.Popup.AskList;   // the missing-items question, each item with its icon (card B21)
             Outfit.Dismiss = Window.Popup.CloseIf;
             Stands.Stands.Resolve(missing, missingOptional);
         }

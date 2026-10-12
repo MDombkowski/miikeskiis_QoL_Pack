@@ -272,7 +272,8 @@ namespace StoreStash
         /// couldn't open by hand and ships someone else is aboard are the chest service's own rules (ChestFinder).</summary>
         internal static ChestRules FindRules() => new ChestRules
         {
-            Range = OverflowSettings.Range.Value > 0f ? OverflowSettings.Range.Value : ChestSettings.RangeOf(Settings.Range),
+            // With "Use this range in every mod" on, the shared range (RangeOf gives it: card B13).
+            Range = OverflowSettings.Range.Value > 0f && !ChestSettings.ForEveryModOn ? OverflowSettings.Range.Value : ChestSettings.RangeOf(Settings.Range),
             OnlyBuiltByMe = Settings.Chests.Value == WhichChests.OnlyChestsIBuilt,
             Skip = chest => WhyLeftAlone(chest) != null,
         };

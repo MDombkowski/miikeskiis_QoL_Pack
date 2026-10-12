@@ -25,7 +25,7 @@ namespace AddToCart
 
         internal const string Name = "Add to Cart";
 
-        internal const string Version = "0.5.0";
+        internal const string Version = "0.5.3";
 
         private static Module current;
 

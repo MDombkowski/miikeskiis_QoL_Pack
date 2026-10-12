@@ -25,10 +25,16 @@ namespace HouseTrained
         internal static bool FarHomeOn;
         internal static bool HealOn;
         internal static bool FeedOn;
+        /// <summary>The module running and switched on (card B25: E makes a follower stay even with Following off).</summary>
+        internal static bool ModuleOn;
+        internal static bool FollowOn;
+        /// <summary>"With the Hoarstone"'s switch; whether it acts also needs Hoarstone on (Ground.Live).</summary>
+        internal static bool KeepToGroundOn;
 
         private static bool wasFriendly;
         private static bool wasFightBack;
         private static bool wasPens;
+        private static bool wasGround;
         private static float nextTidy;
 
         /// <summary>Every frame, from the module's Update (also while it is switched off), with the frame's time.</summary>
@@ -53,6 +59,11 @@ namespace HouseTrained
             // Healing in pens and feeding from the hand stand on their own (card A84): neither needs "Tames in pens".
             HealOn = on && Settings.Heal.Value;
             FeedOn = on && Settings.Feed.Value && !Broken.Is(Feature.FeedHand);
+            // Following and "With the Hoarstone" (cards B25, B26); the second acts only while Hoarstone is on (his words).
+            ModuleOn = on;
+            FollowOn = on && Settings.Follow.Value && !Broken.Is(Feature.TameInteract);
+            KeepToGroundOn = on && Settings.Ground.Value;
+            Ground.Live = KeepToGroundOn && QoLMods.HoarstoneGround.Ground.Now == QoLMods.HoarstoneGround.Ground.Standing.On;
 
             if (wasFriendly && !FriendlyOn)
             {
@@ -71,9 +82,14 @@ namespace HouseTrained
                 Tames.ForgetAllPens();
                 Pens.Forget();
             }
+            if (wasGround && !Ground.Live)
+            {
+                Ground.Forget();
+            }
             wasFriendly = FriendlyOn;
             wasFightBack = FightBackOn;
             wasPens = PensOn;
+            wasGround = Ground.Live;
 
             if (now >= nextTidy)
             {
@@ -88,7 +104,8 @@ namespace HouseTrained
         {
             SpareOn = CropsOn = FriendlyOn = FightBackOn = PensOn = GroundOn = BirthsOn = GrowUpsOn = false;
             SightOn = LetGoOn = WanderOn = HeadsOn = EaseOutOn = FarHomeOn = HealOn = FeedOn = false;
-            wasFriendly = wasFightBack = wasPens = false;
+            ModuleOn = FollowOn = KeepToGroundOn = Ground.Live = false;
+            wasFriendly = wasFightBack = wasPens = wasGround = false;
         }
     }
 }

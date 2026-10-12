@@ -1,6 +1,10 @@
+using System;
 using System.Collections.Generic;
 using BepInEx.Configuration;
 using QoLMods.Kit;
+using QoLMods.ListPicker;
+using UnityEngine;
+using HoarstoneLink = QoLMods.HoarstoneGround.Ground;
 
 namespace HouseTrained
 {
@@ -16,6 +20,14 @@ namespace HouseTrained
     {
         PiecesPlayersBuilt,
         AnyBuildingPiece,
+    }
+
+    /// <summary>Whether a tame in a pen guards a Hoarstone's ground (card B26).</summary>
+    internal enum PennedGuard
+    {
+        Never,
+        ThroughAnOpenGate,
+        Always,
     }
 
     /// <summary>
@@ -38,6 +50,8 @@ namespace HouseTrained
         internal const string WanderPart = "Pens: wandering";
         internal const string HealPart = "Pens: healing";
         internal const string FeedPart = "Feeding from the hand";
+        internal const string FollowPart = "Following";
+        internal const string GroundPart = "With the Hoarstone";
 
         internal static ConfigEntry<bool> Enabled { get; private set; }
 
@@ -122,6 +136,34 @@ namespace HouseTrained
         internal static ConfigEntry<bool> FeedWild { get; private set; }
         internal static ConfigEntry<int> FeedHeal { get; private set; }
 
+        // Card B12: tames' deaths and removals written to the log
+        internal static ConfigEntry<bool> LogTames { get; private set; }
+
+        // Following (card B25)
+        internal static ConfigEntry<bool> Follow { get; private set; }
+        internal static ConfigEntry<WhichTames> FollowWhich { get; private set; }
+        internal static ConfigEntry<string> FollowList { get; private set; }
+        internal static ConfigEntry<bool> FollowSummons { get; private set; }
+        internal static ConfigEntry<KeyboardShortcut> FollowSaddleKey { get; private set; }
+        internal static ConfigEntry<bool> FollowHover { get; private set; }
+        internal static ConfigEntry<bool> FollowFreeOfPens { get; private set; }
+
+        // With the Hoarstone (card B26)
+        internal static ConfigEntry<bool> Ground { get; private set; }
+        internal static ConfigEntry<WhichTames> GroundWhich { get; private set; }
+        internal static ConfigEntry<string> GroundList { get; private set; }
+        internal static ConfigEntry<bool> GroundFight { get; private set; }
+        internal static ConfigEntry<bool> GroundFollow { get; private set; }
+        internal static ConfigEntry<bool> GroundReturn { get; private set; }
+        internal static ConfigEntry<KeyboardShortcut> GroundReturnKey { get; private set; }
+        internal static ConfigEntry<bool> GroundGuard { get; private set; }
+        internal static ConfigEntry<PennedGuard> GroundGuardPenned { get; private set; }
+        internal static ConfigEntry<int> GroundPenReach { get; private set; }
+        internal static ConfigEntry<bool> GroundGuardAnimals { get; private set; }
+        internal static ConfigEntry<int> GroundGuardReach { get; private set; }
+        internal static ConfigEntry<bool> GroundOthers { get; private set; }
+        internal static ConfigEntry<bool> GroundLog { get; private set; }
+
         /// <summary>Goes up whenever any setting changes, so whatever was worked out from them (the lists) is worked out
         /// again.</summary>
         internal static int Version { get; private set; }
@@ -135,6 +177,12 @@ namespace HouseTrained
         {
             bound = settings;
             Enabled = settings.Enabled;
+
+            // Not a part of its own: a watch that only writes (card B12), above the parts' fold-outs.
+            LogTames = settings.Bind(ModuleSettings.General, "LogTames", true, "Write tames' deaths and removals to the log", 995,
+                "Writes a line to the game's log (BepInEx\\LogOutput.log) whenever one of the world's tames dies on your game " +
+                "(its kind, name, place and what hit it last), or a tame is removed from the world by any game (and whose). " +
+                "It changes nothing in the game; it's there so a tame that goes missing can be traced.");
             order = 990;
 
             BeginFold(SparePart);
@@ -364,7 +412,8 @@ namespace HouseTrained
             Feed = Add(FeedPart, "FeedHand", true, "Feed a tame from the hand",
                 "On: using a food your tame eats on it (its hotbar key while you look at it or its saddle, as a saddle is put on) feeds " +
                 "it one. One leaves your inventory and the creature eats it as if it had found it on the ground: it's no " +
-                "longer hungry, it's soothed, and the game's own slow healing runs again. A Lox eats Cloudberries, Barley " +
+                "longer hungry, it's soothed, and the game's own healing runs again (with what it held back while the tame " +
+                "was hungry, as below). A Lox eats Cloudberries, Barley " +
                 "and Flax. When a friend's game looks after the creature, that game feeds it, if it runs House Trained; " +
                 "otherwise nothing is taken and you're told. On out of the box.");
             FeedTiming = Add(FeedPart, "FeedWhen", FeedWhen.OnlyWhenHungry, "When",
@@ -381,11 +430,115 @@ namespace HouseTrained
                 "(frightened, fighting, or not hungry) never takes your food: you eat it yourself, as in the game. Off (the " +
                 "default): only your tames, so eating while you look at a wild boar works as always.");
             FeedHeal = Add(FeedPart, "FeedHeal", 20, "A meal from the hand heals, % of full health",
-                "In the game eating heals nothing at once: it only lets a tame's slow healing run again. This much of its " +
-                "full health comes back at once with each meal from your hand. 0: as in the game.",
+                "This much of its full health comes back at once with each meal from your hand. 0: as in the game. The game's " +
+                "own slow healing stops while a tame is hungry, and once it eats, from the " +
+                "ground or your hand, all it missed comes back at its next heal, a moment later: a tame hungry for long heals " +
+                "a lot at once, up to full.",
                 new AcceptableValueRange<int>(0, 100));
             EndFold();
+
+            BeginFold(FollowPart);
+            Follow = Add(FollowPart, "FollowEveryTame", true, "Every tame follows and stays",
+                "On: E on any of your tames (a boar, a Lox, a hen, an asksvin, a moose) makes it follow you, and E again makes it " +
+                "stay, as the game lets you do with wolves: the game's own command, kept with the creature, so it follows you " +
+                "on a friend's game too. Point at the creature itself: on a saddle, E rides, as in the game (or set a key " +
+                "for the saddle below). Off: only wolves follow, as in the game. On out of the box.");
+            FollowWhich = Add(FollowPart, "FollowWhich", WhichTames.EveryTame, "Which tames",
+                "EveryTame (the default): every tamed creature. TheList: only the tames in the list below (wolves always " +
+                "follow, as in the game).");
+            FollowList = Add(FollowPart, "FollowList", "Lox", "The list",
+                "Tames that follow when \"Which tames\" is TheList, separated by commas: each its name as the game shows it, " +
+                "its prefab name or its $ token.");
+            FollowSummons = Add(FollowPart, "FollowSummons", false, "The staffs' summons too",
+                "The creatures blood magic calls up (the Dead Raiser's skeletons, the spirit callers' wolves, boars, bears and " +
+                "moose) follow their summoner by themselves, and the game sends one away when it's left too far behind. On: E " +
+                "tells them to stay too, and one told to stay waits there until you tell it to follow again (the game sends " +
+                "a summon away, and counts it toward your summons' limit, only while it follows). Off: E pets them, as in " +
+                "the game.");
+            FollowSaddleKey = Add(FollowPart, "FollowSaddleKey", KeyboardShortcut.Empty, "Follow or stay, at a saddle",
+                "A key that makes a saddled tame follow or stay while you point at its saddle (where E rides). None out of the " +
+                "box: point at the creature itself, beside or in front of the saddle, and press E.");
+            FollowHover = Add(FollowPart, "FollowHover", true, "Say Follow or Stay on a tame",
+                "A tame's own text says what E does: [E] Follow, or [E] Stay while it follows, in place of the game's [E] Pet " +
+                "(which the game shows on wolves too). The pet still happens. Off: the game's text.");
+            FollowFreeOfPens = Add(FollowPart, "FollowFreeOfPens", true, "Pens' rules leave followers alone",
+                "While a tame follows you, \"Tames in pens\" leaves it alone (its climbing, head, wall and wandering rules), so " +
+                "it can follow you up a step or into a house. Told to stay, it's under them again.");
+            EndFold();
+
+            BeginFold(GroundPart, GroundTitle);
+            Ground = Add(GroundPart, "Ground", true, "Tames keep to a Hoarstone's ground",
+                "Works only while the Hoarstone mod is switched on (in miikeskii's QoL Pack, or its own release): with it off " +
+                "or not installed, nothing in this part does anything. On: a tame on the ground of a settlement with a " +
+                "Hoarstone (the shape Hoarstone keeps monsters from spawning in) stays on it: it wanders only inside, and " +
+                "walks back in when it finds itself outside. It leaves only as the settings below allow. A tame told to stay " +
+                "outside stays where it was told, as in the game. The game that looks after a tame decides for it, so that " +
+                "game must run House Trained and Hoarstone. On out of the box.");
+            GroundWhich = Add(GroundPart, "GroundWhich", WhichTames.EveryTame, "Which tames",
+                "EveryTame (the default): every tamed creature but the staffs' summons. TheList: only the tames in the list " +
+                "below.");
+            GroundList = Add(GroundPart, "GroundList", "Lox", "The list",
+                "Tames kept to the ground when \"Which tames\" is TheList, separated by commas: each its name as the game " +
+                "shows it, its prefab name or its $ token.");
+            GroundFight = Add(GroundPart, "GroundFight", true, "… they may leave it to fight (and come back)",
+                "On: a tame may chase an enemy off the ground, as far as the game lets it chase, and walks back in once the " +
+                "fight is over. Off: it lets go of an enemy off the ground at the edge, unless it was hurt in the last few " +
+                "seconds.");
+            GroundFollow = Add(GroundPart, "GroundFollow", true, "… they may leave it while following you",
+                "On: a tame following you goes wherever you go; told to stay out there, it stays. Off: it follows you only " +
+                "to the ground's edge, and waits there until you come back in.");
+            GroundReturn = Add(GroundPart, "GroundReturn", true, "\"Return to base\"",
+                "On a tame off the ground, the key below sends it home: it stops following and walks back to the ground it " +
+                "came from (or, if it never was on one, the nearest Hoarstone's), and keeps to it again. Its hover text shows the key only while " +
+                "it's off the ground.");
+            GroundReturnKey = Add(GroundPart, "GroundReturnKey", new KeyboardShortcut(KeyCode.E, KeyCode.LeftAlt), "\"Return to base\" key",
+                "Pressed while pointing at a tame off the ground (or at its saddle). While it's held there, the game's own E " +
+                "does nothing.");
+            GroundGuard = Add(GroundPart, "GroundGuard", true, "Tames guard the ground",
+                "On: a tame on the ground notices an enemy anywhere on it, not only one it sees or hears, and goes for it if " +
+                "it can walk there. A tame in a pen goes only as the next setting says.");
+            GroundGuardPenned = Add(GroundPart, "GroundGuardPenned", PennedGuard.ThroughAnOpenGate, "Tames in a pen guard it",
+                "ThroughAnOpenGate (the default): a tame in a pen goes for an enemy only while a door or gate of its pen is " +
+                "open. Never: tames in pens stay out of it. Always: whenever it can walk there. A pen is what \"Pens: " +
+                "healing\" counts as one, but nearer (next setting): walls round the tame, with its open directions allowed.");
+            GroundPenReach = Add(GroundPart, "GroundPenReach", 20, "How near a pen's walls are, m",
+                "For the setting above: a tame counts as in a pen when walls stand round it within this distance (the walls " +
+                "of a whole base, farther off, don't make a pen), and its pen's doors and gates are looked for as near.",
+                new AcceptableValueRange<int>(5, 60));
+            GroundGuardAnimals = Add(GroundPart, "GroundGuardAnimals", false, "… against harmless animals too",
+                "Off: deer, hares and the other animals that never fight are left alone on the ground. On: every creature " +
+                "the game lets tames fight.");
+            GroundGuardReach = Add(GroundPart, "GroundGuardReach", 0, "How far they go for an enemy, m",
+                "0: anywhere on the ground. Any other: only an enemy at most this far from the tame.",
+                new AcceptableValueRange<int>(0, 300));
+            GroundOthers = Add(GroundPart, "GroundOthers", false, "Also settlements without a Hoarstone",
+                "On: the ground of every settlement Hoarstone counts keeps tames too, as Hoarstone's own \"Where\" does when " +
+                "set to EverySettlement. Off: only settlements with a Hoarstone.");
+            GroundLog = Add(GroundPart, "GroundLog", false, "Write what it does to the log",
+                "For testing: what this part does to each tame, in BepInEx\\LogOutput.log, the same kind of thing again at most " +
+                "every 10 s.");
+            EndFold();
+
+            // The Pick buttons in F1 (card B03): the five lists picked from pictures of the world's creatures (their
+            // trophies), names read as Names reads them and new ones written by prefab name.
+            PickerSettings.Bind(settings);
+            Lists.Attach(SpareList, CreatureList("The tames that spare buildings while \"Which tames\" is TheList.", true));
+            Lists.Attach(FfNever, CreatureList("Creatures whose attacks never hurt other creatures.", false));
+            Lists.Attach(PensList, CreatureList("The tames kept in pens while \"Which tames\" is TheList.", true));
+            Lists.Attach(FollowList, CreatureList("The tames that follow you while \"Which tames\" is TheList.", true));
+            Lists.Attach(GroundList, CreatureList("The tames kept to the ground while \"Which tames\" is TheList.", true));
         }
+
+        private static ListSpec CreatureList(string says, bool tamesOnly) => new ListSpec
+        {
+            Module = Module.Name,
+            Kinds = new[] { ThingKind.Creatures },
+            Format = new ListFormat { Separators = ",;\n\r", Joiner = ", ", Normal = Names.Normal },
+            ShownNames = true,
+            Holds = tamesOnly ? thing => thing.Tame : (Func<Thing, bool>)null,
+            Says = says,
+            Warn = text => Module.Log?.LogWarning(text),
+        };
 
         private static ConfigEntry<T> Add<T>(string part, string key, T value, string name, string description, AcceptableValueBase range = null)
         {
@@ -397,13 +550,19 @@ namespace HouseTrained
 
         // Each part is a fold-out: a title row, then its settings, all under the module's one heading. The title row is a
         // setting of the part's own ("Unfolded"), which remembers whether it is open.
-        private static void BeginFold(string part)
+        // The title row shows the part's name, or a longer title (With the Hoarstone's says it needs Hoarstone on, his
+        // words of 2026-10-11, card B26); the settings file keeps the part's name as its section.
+        private static void BeginFold(string part, Func<string> title = null)
         {
             var settings = new List<ConfigEntryBase>();
             foldUnfolded = bound.Bind(part, "Unfolded", false, part, order--,
-                "Opens and closes this part of the settings in the window. It changes nothing else.", null, FoldDrawer.For(part, settings));
+                "Opens and closes this part of the settings in the window. It changes nothing else.", null,
+                title != null ? FoldDrawer.For(title, settings) : FoldDrawer.For(part, settings));
             foldSettings = settings;
         }
+
+        /// <summary>With the Hoarstone's title row, as drawn now: it works only while Hoarstone is on, and whether it is.</summary>
+        internal static string GroundTitle() => GroundRules.Title(HoarstoneLink.Now);
 
         private static void EndFold()
         {

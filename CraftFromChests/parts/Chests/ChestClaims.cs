@@ -345,7 +345,8 @@ namespace QoLMods.Chests
                 ChestHooks.AtFirstTurn();   // every plugin has started by now
             }
             ChestShare.Tick();   // first: a take through a friend given up on counts in this frame's settling
-            ServerReach.Tick();  // the hello to Far Fetched on the server, when due
+            ServerPack.Tick();   // the hello to miikeskii's Server-Side QoL Pack on the server, when due
+            ServerReach.Tick();  // the hello to Far Fetched on the server, when due (and the server pack doesn't run it)
             PerformanceMods.Tick();  // Skarif's sending order, as the setting says
 
             if (Far.Count > 0)
@@ -843,7 +844,7 @@ namespace QoLMods.Chests
             ZNetPeer server = net.IsServer() ? null : net.GetServerPeer();
             if (server != null && owner == server.m_uid)
             {
-                return "the server (a server mod such as ServersideQoL)";
+                return "the server (a mod running on the server)";
             }
             foreach (ZNet.PlayerInfo player in net.GetPlayerList())
             {

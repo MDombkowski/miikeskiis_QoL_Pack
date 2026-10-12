@@ -17,7 +17,7 @@
     <TargetFramework>net472</TargetFramework>
     <AssemblyName>SpareKeys</AssemblyName>
     <RootNamespace>SpareKeys</RootNamespace>
-    <Version>0.2.0</Version>
+    <Version>0.2.2</Version>
     <!-- Keep the private repo's commit id out of the DLL's version text. -->
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <LangVersion>10.0</LangVersion>
@@ -92,6 +92,11 @@
       <Private>false</Private>
     </Reference>
 
+    <!-- The kit's Say: every message fitted to the screen, measured by the game's own message text (card B14) -->
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>$(ValheimManaged)\Unity.TextMeshPro.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <!-- BepInEx, HarmonyX, Mono.Cecil (it ships with BepInEx: reading other mods' code for keys they read) and Jotunn,
          from the mod profile -->
     <Reference Include="BepInEx">

@@ -6,7 +6,7 @@ namespace AFKRaidBlocker
     /// <summary>
     /// The player's away state, live: each frame it reads his game (his movement, the keys and the mouse, what he sits
     /// or lies on, who is near), runs the away rules (AwayRules) and the presence rule (Nearby), says so when it
-    /// changes, and sets what the patches read (HoldsOff). Runs every frame from the module's Update, also while the mod
+    /// changes, shows the AFK sign while he's away (Icon), and sets what the patches read (HoldsOff). Runs every frame from the module's Update, also while the mod
     /// is switched off, so that switching off takes everything back at once.
     /// </summary>
     internal static class Away
@@ -40,6 +40,7 @@ namespace AFKRaidBlocker
                 someoneThere = false;
                 SetHolding(false);
                 Mark.WriteOwn(player, false, false);
+                Icon.Show(false);
                 return;
             }
             if (!ReferenceEquals(net, world))
@@ -74,6 +75,7 @@ namespace AFKRaidBlocker
             someoneThere = there;
             SetHolding(rules.Away && !there);
             Mark.WriteOwn(player, rules.Away, rules.Away && Settings.ShowMyMark.Value);
+            Icon.Show(rules.Away && player != null && Settings.ShowIcon.Value);
         }
 
         /// <summary>Takes back everything: nothing held off, his flags off. An undo step of the module.</summary>
@@ -185,10 +187,10 @@ namespace AFKRaidBlocker
         {
             HeldOff what = Settings.HeldOff.Value;
             MessagePlace place = Settings.Message.Value;
-            if (place != MessagePlace.None && MessageHud.instance != null)
+            if (Settings.ShowMessages.Value && place != MessagePlace.None && MessageHud.instance != null)
             {
-                MessageHud.instance.ShowMessage(place == MessagePlace.TopLeft ? MessageHud.MessageType.TopLeft : MessageHud.MessageType.Center,
-                                                Message(away, what, Settings.NearbyMetres.Value > 0));
+                QoLMods.Kit.Say.To(place == MessagePlace.TopLeft ? MessageHud.MessageType.TopLeft : MessageHud.MessageType.Center,
+                                   Message(away, what, Settings.NearbyMetres.Value > 0), log: true);
             }
             if (Settings.Log.Value)
             {

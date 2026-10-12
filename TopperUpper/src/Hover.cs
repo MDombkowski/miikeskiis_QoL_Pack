@@ -56,7 +56,8 @@ namespace TopperUpper
                 }
                 if (Settings.LinkKey.Value.MainKey != UnityEngine.KeyCode.None)
                 {
-                    lines.Append($"  [<color=yellow><b>{Keys.Text(Settings.LinkKey.Value)}</b></color>] Link chests");
+                    lines.Append($"  [<color=yellow><b>{Keys.Text(Settings.LinkKey.Value)}</b></color>] " +
+                                 (Links.Linking == fed ? "Done linking" : "Link chests"));
                 }
             }
             if (isFed && !string.IsNullOrEmpty(fed.Why))
@@ -66,23 +67,55 @@ namespace TopperUpper
             return lines.ToString();
         }
 
-        /// <summary>A linked chest's text with its line added: "Topper-Upper: an input of the Smelter".</summary>
+        /// <summary>A chest's text with Topper-Upper's lines added. While a station is being linked (card B11): what the chest
+        /// is to it, and what E and Left Shift + E will do, as the game writes its keys ("[E] Make it an input"), or why it
+        /// can't be linked; always, whatever the hover setting, since nothing else on screen says how linking works. Else,
+        /// with the hover setting on, each station it is linked to: "Linked: the Smelter's input and its output".</summary>
         internal static string AddToChest(Container chest, string text)
         {
-            if (!Settings.StationHover.Value || chest == null || string.IsNullOrEmpty(text))
+            if (chest == null || string.IsNullOrEmpty(text))
             {
                 return text;
             }
-            List<KeyValuePair<Fed, bool>> linked = Links.LinkedTo(chest);
+            Fed linking = Links.Linking;
+            if (linking != null)
+            {
+                return text + Linking(linking, chest);
+            }
+            if (!Settings.StationHover.Value)
+            {
+                return text;
+            }
+            List<KeyValuePair<Fed, string>> linked = Links.LinkedTo(chest);
             if (linked.Count == 0)
             {
                 return text;
             }
             var lines = new StringBuilder(text);
-            foreach (KeyValuePair<Fed, bool> each in linked)
+            foreach (KeyValuePair<Fed, string> each in linked)
             {
-                lines.Append($"\n<color={Grey}>Linked: {(each.Value ? "an output" : "an input")} of the {Names.Of(each.Key)}</color>");
+                lines.Append($"\n<color={Grey}>Linked: the {Names.Of(each.Key)}'s {each.Value.Substring("its ".Length)}</color>");
             }
+            return lines.ToString();
+        }
+
+        // While linking: "Linking the Smelter: this chest is its input", then the two keys.
+        private static string Linking(Fed station, Container chest)
+        {
+            string name = Names.Of(station);
+            string why = Links.WhyNotLinkable(chest);
+            if (why != null)
+            {
+                return $"\n<color={Grey}>Linking the {name}: this chest can't be linked (it is {why})</color>";
+            }
+            Links.RolesOf(station, chest, out bool input, out bool output);
+            string role = LinkWords.Role(input, output);
+            var lines = new StringBuilder();
+            lines.Append($"\n<color={Grey}>Linking the {name}: this chest is {(role ?? "not linked to it")}</color>");
+            // The keys the game reads, as its own hints name them (review m4).
+            string use = Keys.UseName();
+            lines.Append($"\n[<color=yellow><b>{use}</b></color>] {(input ? "No longer its input" : "Make it an input")}");
+            lines.Append($"\n[<color=yellow><b>{Keys.AltName()} + {use}</b></color>] {(output ? "No longer its output" : "Make it an output")}");
             return lines.ToString();
         }
 
@@ -178,7 +211,7 @@ namespace TopperUpper
         [HarmonyPriority(Priority.Last)]
         private static void Postfix(Container __instance, ref string __result)
         {
-            if (!Module.IsOn || __instance == null || string.IsNullOrEmpty(__result) || !Settings.StationHover.Value)
+            if (!Module.IsOn || __instance == null || string.IsNullOrEmpty(__result) || (!Settings.StationHover.Value && Links.Linking == null))
             {
                 return;
             }

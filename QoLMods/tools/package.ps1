@@ -87,7 +87,10 @@ foreach ($doc in @('README.md', 'CHANGELOG.md')) {
 # Nothing that ships says how a mod was tested, or that it wasn't: his rule (card B07, 2026-10-10). The bundle's text
 # and every module's, whose single releases are packed below from the same folders.
 $shippedFolders = @($bundleFolder) + @($modules | ForEach-Object { Join-Path $valheimFolder $_.Folder })
-& (Join-Path $PSScriptRoot 'check-shipped-text.ps1') @shippedFolders
+# -Public for all of them (card B32): their text goes public too, in the source repository (-SourceTo).
+& (Join-Path $PSScriptRoot 'check-shipped-text.ps1') -Public @shippedFolders
+# No README names a mod the pack never names (his rule 8, card B05: tools\mods-never-named.txt).
+& (Join-Path $PSScriptRoot 'check-mod-names.ps1') @shippedFolders
 
 # Thunderstore asks an AI-made mod to say so in its README and in its project's AssemblyMetadata (its wiki page "LLMs
 # and AI-generated files", read 2026-09-27; his order: the package follows the policies). Refuse to pack without both.
@@ -121,6 +124,15 @@ if ($LASTEXITCODE -ne 0) { throw 'The build failed, so nothing was packed.' }
 # Topper-Upper's settings, card B10), and its debug path must not name this computer's user. Checked before anything is
 # packed; the single releases below are built from the same sources in the same folder.
 & (Join-Path $PSScriptRoot 'check-shipped-text.ps1') (Join-Path $bundleFolder 'bin\Release\net472\QoLMods.dll')
+# Nor does any setting, message or log line in it name a mod the pack never names (his rule 8, card B05).
+& (Join-Path $PSScriptRoot 'check-mod-names.ps1') (Join-Path $bundleFolder 'bin\Release\net472\QoLMods.dll')
+
+# Every message is shown through the kit's Say, which fits it to the screen (card B14): the DLL's code is read, and a
+# call to the game's message methods anywhere else is refused. The single releases are built from the same sources.
+# A hashtable: Windows PowerShell 5.1 binds an array's '-ModProfile' as a DLL path, not a parameter (review M1).
+$messageCheck = @{ Dlls = @((Join-Path $bundleFolder 'bin\Release\net472\QoLMods.dll')) }
+if ($ModProfile) { $messageCheck.ModProfile = $ModProfile }
+& (Join-Path $PSScriptRoot 'check-messages.ps1') @messageCheck
 
 $icon = Join-Path $bundleFolder 'icon.png'
 if (-not (Test-Path $icon)) { & (Join-Path $PSScriptRoot 'make-icon.ps1') -OutFile $icon }
@@ -139,6 +151,15 @@ foreach ($module in $modules) {
         [void]$credits.AppendLine($line)
     }
 }
+
+# What Thunderstore shows (the README, the CHANGELOG, the gathered credits) carries none of the project's own notes:
+# card codes, test builds, runbooks (his rule, card B32). The credits are checked as they will ship, from a scratch copy.
+$creditsCheck = Join-Path ([System.IO.Path]::GetTempPath()) "qolmods-credits-check-$version.md"
+[System.IO.File]::WriteAllText($creditsCheck, $credits.ToString(), (New-Object System.Text.UTF8Encoding($false)))
+try {
+    & (Join-Path $PSScriptRoot 'check-shipped-text.ps1') -Public (Join-Path $bundleFolder 'README.md') (Join-Path $bundleFolder 'CHANGELOG.md') $creditsCheck
+}
+finally { Remove-Item -LiteralPath $creditsCheck -ErrorAction SilentlyContinue }
 
 # The pack is GPL-3.0 (his pick, 2026-09-27). Thunderstore's moderators rejected 0.6.3 for carrying its source
 # ("Please remove the source files"), so the package carries the licence only, and the source lives in a public

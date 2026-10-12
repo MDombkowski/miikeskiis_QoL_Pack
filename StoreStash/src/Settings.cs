@@ -234,6 +234,7 @@ namespace StoreStash
                 "How far from you a chest may be for the quick stack, Place stacks and holding E. " + ChestSettings.OwnRangeNote,
                 new AcceptableValueRange<float>(0f, ChestSettings.MostRange));
             settings.MovedDefault(Range, ChestSettings.DefaultRange, 2);
+            ChestSettings.Reaches("StoreStash (quick stack, Place stacks, holding E)", "Search radius (metres)", Range);   // card B13
 
             Chests = settings.Bind(ModuleSettings.General, "Chests", WhichChests.AnyChestICanOpen,
                 "Which chests", 978,

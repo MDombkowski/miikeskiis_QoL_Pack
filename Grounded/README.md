@@ -42,6 +42,8 @@ The game uses <kbd>Left Alt</kbd> for nothing. You can change the key in the set
 
 Open the settings in game with a configuration manager (shudnal's ConfigurationManager opens with F1); each one says what it does there. They are kept in `BepInEx\config\modprojects.grounded.cfg`, which appears after the first start; in the bundle, in the section "Grounded" of its own file.
 
+"Rugs" and "Floors" have a **Pick** button beside their text box there, which opens a window of everything the list can hold, each with its picture: a click puts a thing on the list or takes it off. The text box stays for typing.
+
 ## If something goes wrong
 
 Look in `BepInEx\LogOutput.log` for lines from "Grounded". If the game has changed so that the mod can't find what it needs, it switches itself off and says why, and rugs are placed as without the mod. The same goes for an error while playing.

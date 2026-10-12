@@ -22,6 +22,40 @@ namespace Outfitter
         Cancel,
     }
 
+    /// <summary>How the missing-items question lists each item (card B21, his words of 2026-10-11: "show the icon and
+    /// allow mouse-over hover to reveal the name of the item").</summary>
+    internal enum MissingListLook
+    {
+        /// <summary>Its icon, how many and why; its name when the pointer is over the icon.</summary>
+        IconNameOnHover,
+
+        /// <summary>Its icon, its name, how many and why.</summary>
+        IconAndName,
+    }
+
+    /// <summary>What happens to what he wears that the loadout he switches to doesn't wear (card B18, his feedback of
+    /// 2026-10-11: "It needs to unequip equipped items when I do the switch to a new loadout").</summary>
+    internal enum WornNotInLoadout
+    {
+        /// <summary>It comes off, whether or not a chest takes it: what no chest takes stays in his inventory.</summary>
+        ComesOff,
+
+        /// <summary>0.5's way (card A34, decisions 37 and 47): it comes off only when a chest takes it or the loadout puts
+        /// something in its place.</summary>
+        ComesOffOnlyIntoAChest,
+    }
+
+    /// <summary>What happens to a belt or trinket he wears that the loadout doesn't name (card B18, the review: a belt
+    /// coming off away from chests takes its carry weight with it).</summary>
+    internal enum WornUtilityNotInLoadout
+    {
+        /// <summary>0.5's way: it comes off only when a chest takes it or the loadout puts one in its place.</summary>
+        KeepWearing,
+
+        /// <summary>As "What I wear that the loadout doesn't" at ComesOff: it comes off whether or not a chest takes it.</summary>
+        ComesOff,
+    }
+
     /// <summary>How long putting a piece on takes.</summary>
     internal enum EquipTime
     {
@@ -220,7 +254,10 @@ namespace Outfitter
         internal static ConfigEntry<EquipMode> Mode { get; private set; }
         internal static ConfigEntry<bool> AskMode { get; private set; }
         internal static ConfigEntry<MissingItems> Missing { get; private set; }
+        internal static ConfigEntry<MissingListLook> MissingList { get; private set; }
         internal static ConfigEntry<bool> KeepWornWhenMissing { get; private set; }
+        internal static ConfigEntry<WornNotInLoadout> NotWorn { get; private set; }
+        internal static ConfigEntry<WornUtilityNotInLoadout> UtilityNotWorn { get; private set; }
         internal static ConfigEntry<FavouriteGear> GearFavourites { get; private set; }
 
         /// <summary>Each loadout's favourites switch out of the box (his words, 2026-10-07: "a config option (by default
@@ -351,9 +388,25 @@ namespace Outfitter
                 "When some of a loadout isn't in the chests nearby. Ask: a pop-up lists what's missing and offers \"Equip " +
                 "what's here\". EquipWhatsHere: without asking, and says what was missing. Cancel: nothing changes, and it " +
                 "says what's missing.");
+            MissingList = b.Add(EquipPart, "MissingList", MissingListLook.IconNameOnHover, "Missing items in the pop-up",
+                "How the pop-up lists what's missing. IconNameOnHover: each item's icon with how many and why; point at the " +
+                "icon for its name. IconAndName: the icon, the name, how many and why. An item with no icon shows its name.");
             KeepWornWhenMissing = b.Add(EquipPart, "KeepWornWhenMissing", true, "Keep wearing mine when a piece is missing",
                 "On: when the loadout's helmet (or any piece of gear) can't be had, you keep wearing the one you have in " +
                 "that place, rather than being left without. Off: what you wore there goes away all the same.");
+            NotWorn = b.Add(EquipPart, "WornNotInLoadout", WornNotInLoadout.ComesOff, "What I wear that the loadout doesn't",
+                "ComesOff: when you put a loadout on, whatever you wear that it doesn't wear comes off, arrows and bolts " +
+                "too (the game keeps them equipped with no bow in hand), so only the loadout's gear is on; what no chest " +
+                "takes stays in your inventory. ComesOffOnlyIntoAChest: it comes off only when a chest takes it or the " +
+                "loadout puts something in its place, so away from chests you keep wearing it. Belts and trinkets follow " +
+                "the setting below. Either way \"Keep wearing mine when a piece is missing\" keeps yours on where the " +
+                "loadout's own piece can't be had, and what never goes away stays as it is (favourites while they're left " +
+                "alone, and in the swap modes what isn't gear by the switches in Which copy).");
+            UtilityNotWorn = b.Add(EquipPart, "WornUtilityNotInLoadout", WornUtilityNotInLoadout.KeepWearing, "A belt or trinket the loadout doesn't name",
+                "KeepWearing: a belt or trinket you wear that the loadout doesn't name comes off only when a chest takes it " +
+                "or the loadout puts one in its place, so away from chests you keep its bonus (a Megingjord's carry weight). " +
+                "ComesOff: it comes off like the rest, whether or not a chest takes it (the window's weight line counts the " +
+                "carry weight you'd lose).");
             GearFavourites = b.Add(EquipPart, "FavouriteGear", FavouriteGear.Swaps, "My favourite gear in an equip",
                 "Swaps: gear you marked as a favourite (StoreStash: Left Shift + right-click) comes off and goes away like any " +
                 "other gear when a loadout replaces it (armour, weapons, and by their switches in Which copy arrows, tools and " +
@@ -399,6 +452,7 @@ namespace Outfitter
                 "How far from you a chest may be for Outfitter to take from it and put into it. " + QoLMods.Chests.ChestSettings.OwnRangeNote,
                 new AcceptableValueRange<float>(0f, QoLMods.Chests.ChestSettings.MostRange));
             settings.MovedDefault(Range, QoLMods.Chests.ChestSettings.DefaultRange, 1);
+            QoLMods.Chests.ChestSettings.Reaches("Outfitter, " + ChestsPart, "Chest range (metres)", Range);   // card B13
             Chests = b.Add(ChestsPart, "Chests", WhichChests.AnyChestICanOpen, "Which chests",
                 "AnyChestICanOpen: every chest you could open by hand (a friend's public chest too, never a private one or " +
                 "one behind a ward that isn't yours). OnlyChestsIBuilt: only chests you built. Chests the world made, " +

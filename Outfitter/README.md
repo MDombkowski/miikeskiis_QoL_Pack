@@ -2,13 +2,13 @@
 
 Saved loadouts for Valheim: pick the cells of your inventory you want, save them under a name, or build a loadout by dragging in what your chests hold, and put a loadout on in one go. Its items come from the chests near you, what you wore goes away into the chests your setups name, and every item lands in the cell it was saved in. Three modes, top-ups, share codes for friends, with or without EquipmentAndQuickSlots. And **Loadout Stands**: the game's own armour stand as a loadout's stand, wearing its gear whenever you don't, one key to put it on and hang it back, and a window to name stands and move loadouts between them. Client-side: only the players who want it install it.
 
-A mod of **miikeskii's QoL Pack**, and released on its own too. Version 0.5.0.
+A mod of **miikeskii's QoL Pack**, and released on its own too. Version 0.6.0.
 
 ## How to use it
 
 - **Pick the cells to save:** open your inventory, hold **Right Alt** and left-click the cells you want (an orange frame marks each; click again to unpick). Or, in Outfitter's window, press **Show my inventory**, then **Highlight cells**, and click the cells of your inventory there.
 - **Save:** press **L** to open Outfitter's window, then **Save new** and give it a name. With cells of the loadout picked highlighted instead (Highlight cells, then click them in the loadout), **Save new** makes a new loadout of just those cells, each item where it sits. **Save over** replaces the loadout you've chosen with what's in the highlighted cells now; its food slots stay, with their rules, and of the foods you carry that the loadout doesn't name, the one each slot would take stays that slot's, not saved as an item (as an item it would keep every slot from it: you eat one of each); every other food is saved as usual. Anything else lying in a slot's cell is saved, and the slot moves to a free cell; it says so.
-- **Equip:** choose a loadout and press **Equip now**. If some of it isn't in the chests nearby, a pop-up says what and offers to equip what's here (never asked: *Missing items*, Equipping: EquipWhatsHere).
+- **Equip:** choose a loadout and press **Equip now**. If some of it isn't in the chests nearby, a pop-up lists what, each item by its icon with how many and why (point at an icon for its name), and offers to equip what's here.
 - **Order:** the loadout picked in the list shows **↑** and **↓**: each moves it one place up or down.
 - **The same loadout again tops it up:** 10 carrot soups saved and 3 carried, so 7 come from the chests.
 - **Share:** **Copy code** puts the loadout on the clipboard as text to paste to a friend (it's too long for the game's chat, so paste it in Discord or Steam). **Paste code** makes a loadout from a friend's code. A code is only a list: it never makes an item, and anything your game doesn't have (another mod's item) shows as "not in your game".
@@ -66,7 +66,7 @@ The three buttons sit under the heading **Equip mode** beside Equip: the one cho
 ## Where things go
 
 - **What comes:** from the chests near you (150 m by default), the chests set up for an item first (StoreStash's chest setups). For gear, the best copy: the saved quality or better, the best first, then the least worn.
-- **What goes away:** where StoreStash's quick stack would send it: the chests set up for it first, then chests already holding it, then any chest with room, nearest first. What no chest can take stays with you, never on the ground, and you're told; a piece you wear that no chest takes and nothing replaces stays on. Quest items never go away; your favourites go as the loadout's Favourites go too says (above).
+- **What goes away:** where StoreStash's quick stack would send it: the chests set up for it first, then chests already holding it, then any chest with room, nearest first. What no chest can take stays with you, never on the ground, and you're told. What you wear that the loadout doesn't comes off either way, arrows too (the game keeps them equipped with no bow in hand), so only the loadout's gear is on; a belt or trinket stays on unless a chest takes it (a setting), and where the loadout's own piece can't be had, *Keep wearing mine* keeps yours on. Quest items never go away; your favourites go as the loadout's Favourites go too says (above).
 - **More than the loadout's count** (a second stack, a spare copy): put away in Fully replace and kept in the swap modes, by a setting.
 - **Never touched:** Reserve Stock's reserved chests, a chest someone else has open (a friend's open chest can be taken from through their game, if they have the pack), gravestones, and (by a setting) carts' and ships' chests.
 - **Never lost or copied:** every item moves through the pack's chest service, which asks each chest's owner first and moves exactly what arrived, as Add to Cart and StoreStash do.

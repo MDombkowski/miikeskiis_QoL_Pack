@@ -24,7 +24,7 @@ namespace PortionControl
 
         internal const string Name = "Portion Control";
 
-        internal const string Version = "0.2.4";
+        internal const string Version = "0.2.7";
 
         /// <summary>turbero's BetterSplitDialog, which this module replaces.</summary>
         internal const string BetterSplitDialog = "Turbero.BetterSplitDialog";

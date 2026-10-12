@@ -63,10 +63,11 @@ namespace QoLMods.Kit
         /// (BepInEx hands back the entry already bound under the same section and key, its description and display hints
         /// the first binder's), and a player sets it once for them all. In a single release it is that mod's own, in its
         /// own file. A shared setting's section, key, type and default are the same wherever it's bound (a part keeps them
-        /// in one place: the chest service's ChestSettings); its order counts only within its own section.
+        /// in one place: the chest service's ChestSettings); its order counts only within its own section. A custom drawer
+        /// is passed as Bind's is (since 2026-10-11, card B13: "Use this range in every mod" and its list).
         /// </summary>
         internal ConfigEntry<T> BindShared<T>(string section, string key, T defaultValue, string displayName, int order, string description,
-                                              AcceptableValueBase acceptableValues = null)
+                                              AcceptableValueBase acceptableValues = null, Action<ConfigEntryBase> customDrawer = null)
         {
             // Whether the file had the section before anything bound it, looked at once per file and section (in the
             // bundle the first module to bind it writes it into the file).
@@ -75,7 +76,7 @@ namespace QoLMods.Kit
             {
                 SharedAtStart[seenKey] = hadIt = FileHasSection(config.ConfigFilePath, section);
             }
-            var hints = new ConfigurationManagerAttributes { DispName = displayName, Order = order };
+            var hints = new ConfigurationManagerAttributes { DispName = displayName, Order = order, CustomDrawer = customDrawer };
             ConfigEntry<T> entry = config.Bind(section, key, defaultValue, new ConfigDescription(description, acceptableValues, hints));
             if (!hadIt)
             {

@@ -1,6 +1,6 @@
 # Credits: Portion Control
 
-What this mod borrows, from whom, and under which licence, kept so the mod can be published properly at any time. Licences as recorded on 2026-09-24 and 2026-09-29 in the research behind cards A17 and A49.
+What this mod borrows, from whom, and under which licence, kept so the mod can be published properly at any time. Licences as recorded on 2026-09-24 and 2026-09-29.
 
 ## Code copied in
 

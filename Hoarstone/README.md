@@ -34,6 +34,8 @@ No more hidden torches in every corner of your base. Hoarstone works out a settl
 
 Open the settings in game with a configuration manager (shudnal's ConfigurationManager opens with F1): all under the one heading "Hoarstone", each part folded under its title. They are kept in `BepInEx\config\modprojects.hoarstone.cfg`, which appears after the first start; in the bundle, in its own file's "Hoarstone" sections. The configuration manager describes every setting; the main ones:
 
+"Pieces that never count" and "Its cost" have a **Pick** button beside their text box there, which opens a window of everything the list can hold, each with its picture: a click puts a thing on the list or takes it off. The text box stays for typing.
+
 | Setting | Default | What it does |
 |---|---|---|
 | Keep monsters from spawning in settlements | on | The whole point; off leaves outlines and the Hoarstone working. |

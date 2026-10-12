@@ -571,8 +571,19 @@ namespace CraftFromChests
 
         private static void Postfix(InventoryGui __instance, bool __state)
         {
+            // Only a press while the bar was idle. Crafting an amount first (card B16): it decides whether this craft is the
+            // game's x5 craft, which the chests are then asked for.
+            if (__state || GameHooks.CraftTimer == null)
+            {
+                return;
+            }
+            bool started = GameHooks.Read<float>(GameHooks.CraftTimer, __instance) >= 0f;
+            if (Batches.On || Batches.Running)
+            {
+                Module.Guard("starting a run of crafts", () => Batches.Pressed(__instance, started));
+            }
             // Only when this press started a craft (the bar was idle and now runs).
-            if (__state || !Crafting.On || GameHooks.Read<float>(GameHooks.CraftTimer, __instance) < 0f)
+            if (!started || !Crafting.On)
             {
                 return;
             }

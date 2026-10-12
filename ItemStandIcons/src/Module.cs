@@ -24,7 +24,7 @@ namespace ItemStandIcons
 
         internal const string Name = "Item Stand Icons";
 
-        internal const string Version = "0.2.1";
+        internal const string Version = "0.3.0";
 
         /// <summary>The name of the item stands' mark on each icon (MODULES.md rule 10).</summary>
         internal const string MarkName = "ItemStandIcons_StandMark";
@@ -76,6 +76,7 @@ namespace ItemStandIcons
             GameHooks.Resolve(missing, missingOptional);
             // Add to Cart, in the same plugin (the bundle), follows what this module shows.
             StandShare.Current = Settings.View;
+            QoLMods.ListPicker.Lists.Resolve(missingOptional);
         }
 
         internal override string UpdateTask => "marking the crafting list and the trader";

@@ -20,6 +20,10 @@ namespace HouseTrained
     /// </summary>
     internal static class GroundRule
     {
+        /// <summary>Whether a contact at <paramref name="contactY"/> is on top of a creature whose body's centre is at
+        /// <paramref name="otherCentreY"/>: at or above it (card B12). Below it, the two only touch at their sides.</summary>
+        internal static bool OnTop(float contactY, float otherCentreY) => contactY >= otherCentreY;
+
         /// <summary>
         /// How high a ground contact is, for the step test (code review 1, finding 2): above the lowest point of the
         /// tame's body (its root capsule's bottom, which sits above the creature's root for some: 0.37 m for a moose calf),
@@ -266,11 +270,20 @@ namespace HouseTrained
         /// <summary>A gap longer than this between two steps on a creature starts the count again.</summary>
         internal const float Gap = 0.25f;
 
+        /// <summary>The most nudges in one Window (card B12): a tame still on a creature after them is left to the game,
+        /// never pushed on and on.</summary>
+        internal const int MostNudges = 3;
+
+        /// <summary>The window MostNudges counts in, in seconds.</summary>
+        internal const float Window = 10f;
+
         private float since = float.NaN;
         private float last = float.NaN;
+        private float windowFrom = float.NaN;
+        private int nudges;
 
         /// <summary>The tame stood on a creature in this step: true when it is time to nudge it (then the count starts
-        /// again, so it's nudged at most once a second).</summary>
+        /// again, so it's nudged at most once a second, and at most MostNudges times in Window seconds).</summary>
         internal bool OnCreature(float now)
         {
             if (float.IsNaN(since) || now - last > Gap)
@@ -278,12 +291,22 @@ namespace HouseTrained
                 since = now;
             }
             last = now;
-            if (now - since >= After)
+            if (now - since < After)
             {
-                since = now;
-                return true;
+                return false;
             }
-            return false;
+            since = now;
+            if (float.IsNaN(windowFrom) || now - windowFrom >= Window)
+            {
+                windowFrom = now;
+                nudges = 0;
+            }
+            if (nudges >= MostNudges)
+            {
+                return false;
+            }
+            nudges++;
+            return true;
         }
 
         /// <summary>Which way to push: sideways, away from the other's centre (straight down would do nothing; if the two

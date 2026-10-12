@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using BepInEx.Configuration;
 using QoLMods.Kit;
+using QoLMods.ListPicker;
 using UnityEngine;
 
 namespace UseCase
@@ -107,7 +108,7 @@ namespace UseCase
                 "ToggledByKey: the key below switches it on and off. With no key set, both key choices show it on hover.");
             Key = Add(general, "Key", KeyboardShortcut.Empty, "The key",
                 "The key for the two key choices above, and for unfolding sections when long lists fold (Look). Left Alt is " +
-                "best avoided: MyLittleUI and HexQuickStackStorage use it over items.");
+                "best avoided: StoreStash and other mods use it over items.");
             PinKey = Add(general, "PinKey", KeyboardShortcut.Empty, "Pin key",
                 "Pressed while the panel shows, it stays where it is after the pointer moves on, to read a long list; " +
                 "pressed again, or once the window it was pinned in closes (the inventory, the trader; for the build panel's " +
@@ -119,7 +120,7 @@ namespace UseCase
             BeginFold(WherePart);
             InInventory = Add(WherePart, "Inventory", true, "In the inventory and chests",
                 "Beside the tooltip of items in the inventory, in chests, carts and ships, and in other mods' slots that " +
-                "are the game's own (EquipmentAndQuickSlots).");
+                "are the game's own inventory cells.");
             InTrader = Add(WherePart, "Trader", true, "In the trader's list",
                 "Beside the tooltip of what Haldor, Hildir and the Bog Witch sell.");
             InCraftingCosts = Add(WherePart, "CraftingCosts", true, "On the crafting panel's costs",
@@ -223,6 +224,13 @@ namespace UseCase
                 "listing an item's uses (General) adds to it.");
             EndFold();
 
+            // The Pick buttons in F1 (card B03): both lists picked from pictures of the game's things, names read as Loose
+            // reads them (the name shown, the prefab's name or the $ token) and new ones written by prefab name.
+            PickerSettings.Bind(bound);
+            Lists.Attach(NeverList, IgnoreList("Pieces, recipes (by what they make), stations and creatures never to list.",
+                                               ThingKind.Items, ThingKind.Pieces, ThingKind.Creatures));
+            Lists.Attach(NeverShowFor, IgnoreList("Items that never get a panel.", ThingKind.Items));
+
             BeginFold(LookPart);
             Side = Add(LookPart, "Side", PanelSide.Beside, "Side",
                 "Beside: right of the tooltip, or left of it when there's no room. AlwaysRight, AlwaysLeft, Below: there, as " +
@@ -322,6 +330,16 @@ namespace UseCase
             string heading = Lines.Heading(kind);
             return Kinds[kind] = Add(WhatPart, kind.ToString(), on, heading, "List " + heading + ": " + what);
         }
+
+        private static ListSpec IgnoreList(string says, params ThingKind[] kinds) => new ListSpec
+        {
+            Module = Module.Name,
+            Kinds = kinds,
+            Format = new ListFormat { Separators = ",;\n\r", Joiner = ", ", Normal = Loose.Normal },
+            ShownNames = true,
+            Says = says,
+            Warn = text => Module.Log?.LogWarning(text),
+        };
 
         private static ConfigEntry<T> Add<T>(string part, string key, T value, string name, string description, AcceptableValueBase range = null)
         {

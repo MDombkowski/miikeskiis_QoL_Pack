@@ -18,7 +18,7 @@
     <TargetFramework>net472</TargetFramework>
     <AssemblyName>ItemStandIcons</AssemblyName>
     <RootNamespace>ItemStandIcons</RootNamespace>
-    <Version>0.2.1</Version>
+    <Version>0.3.0</Version>
     <!-- Keep the private repo's commit id out of the DLL's version text. -->
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <LangVersion>10.0</LangVersion>
@@ -66,6 +66,10 @@
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>$(ValheimManaged)\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(ValheimManaged)\UnityEngine.IMGUIModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.UI">

@@ -1,12 +1,47 @@
 # Changelog
 
+## 0.6.0 (2026-10-12)
+
+- **A station's input and output each have their own radius**: "Chest radius around a station" is now **"Input radius around a station"** (what a station takes from; your number is kept), and the new **"Output radius around a station"** is where what it makes is put away, so coal from a kiln can go into a chest farther off while the kiln still takes its wood only from the chests right beside it. Out of the box the output radius is 0, the range in "Chests (every mod)", measured from the station. The catch-up puts what it made away by the output radius too.
+- **Loose items and a station's products no longer leave anything between them:** the loose pickup leaves to a station exactly the products its put-away looks at (1.5 m round its output). Before, a product 1.5 to 2 m from the output was left by both.
+
+## 0.5.0 (2026-10-11)
+
+- **Lists picked from pictures**: What each station takes first, the kiln's woods, "Never take, for anything", "Keep in reserve", "Keep at most" and "Never pick up" have a Pick button in the settings window (F1): it opens a window of everything the list can hold, each with its picture, where a click puts a thing on the list or takes it off, with Up and Down for what each station takes first, an amount box for the reserves and maximums, and the game's item types beside the items for "Never pick up". The typed box stays beside it, and the list is written as the mod reads it, with any names the game doesn't know kept. The window is set in the new section "Lists (every mod)" (its size, its pictures', whether things not found yet show).
+
+## 0.4.1 (2026-10-11)
+
+- Two settings' descriptions say it more exactly: "Feed lights and fires" (where its "Chest range" is) and "Stand aside while the server feeds a station" (when miikeskii's Server-Side QoL Pack can leave a station with nobody). What they do is unchanged.
+
+## 0.4.0 (2026-10-11)
+
+- **Stations and loose items on out of the box**: "Feed stations" and "Pick up loose items into chests" are now on for everyone, as lights and fires already were. A settings file that still has either off moves to on once (the file can't tell an off you chose from the old default, so switch it off again if another mod picks up your loose items or feeds your stations); after that, what you set stays. With miikeskii's Server-Side QoL Pack on the server, this is also what lets the server hand your game the drops and stations of friends without the pack near you, and what puts its catch-up for everyone to work.
+- **A 0 on every distance:** "Light range", "Range around the light", "Chest radius around a station" and "Range from the item to the chest" take 0 for the range in **Chests (every mod)**, measured from you, the light, the station or the item. Their own numbers out of the box are the same as before.
+- **Each setting says which range it uses:** "Take its fuel from", the reserves, the maximums, the count, linked fuel and putting products away now name the range setting they go by.
+- Settings and messages name no other mod unless Topper-Upper works with it, stands aside for it or makes room for it. The notice that a mod on the server still picks up loose items itself says just that.
+
+## 0.3.0 (2026-10-11)
+
+- **Linking a station's chests, plainly**: the message when linking starts is four short lines instead of one that ran off the screen, and while you link, every chest you look at says what it is to the station and what **E** and **Left Shift + E** will do to it. Each press, and why linking ended, is written to the log.
+- **One chest can be both** a station's input and its output: **E** makes a chest an input or no longer one, **Left Shift + E** the same for an output, each on its own (before, one switched the other off). A chest that is both glows its own colour ("Input and output colour", amber).
+- **"Use this range in every mod"** in the shared section **Chests (every mod)**: while it's on, Topper-Upper's chest range and its count range are the shared **Chest range**, whatever its own says (its own is kept for when it's off). The section also has a button that sets every mod's own range to 0 for good, and lists every chest distance in the pack with what each reaches now.
+- **Messages fit the screen**: a message line too wide for your screen is broken at spaces into lines that fit, measured by the game's own text, as every mod of miikeskii's QoL Pack now does.
+
+## 0.2.0 (2026-10-11)
+
+- **Catch up while away** (a new part of the settings, "Catch-up"; off out of the box). A station only runs while someone is near it, so a base's smelters stood still while everyone was elsewhere. Now, when the base loads again, its smelters, blast furnace, charcoal kiln, windmill, spinning wheel, eitr refinery and Frigid Kiln make up at once what they would have made in the time players were on the server: fed from the chests near them by your rules for all that time (what each takes first, reserves, maximums, the kiln's woods, never take, leave one, fuel only while there's something to process, linked chests), and what they made goes into the chests as stacks (the linked output first, else as products are put away; when "Products with no linked output" leaves them where they fall, or the chests have no room, they lie at the station in whole stacks), never hundreds of single items on the ground. A fermenter that was ready is tapped, filled and fermented again as often as the time allows. One line per station ("Smelter caught up 3 h 12 min: Copper x96"), over it or in the log. Fires and torches don't catch up.
+- **Only time with players on counts**, never a night with the server empty: with miikeskii's Server-Side QoL Pack on the server, its clock (every player counts, with the pack or without); alone or hosting, the world's own time; on a server without it, your own time online in that world, kept with your character. At most 24 hours of play at once (a setting). What was already in a station always finishes as far as the game itself would take it.
+- **The windmill's wind**, your choice: the wind when you left it (noted on the windmill while your game looked after it; the default), the wind when you come back, or the average wind of its biome.
+- **miikeskii's Server-Side QoL Pack**: Topper-Upper tells it whether it's on, feeds stations and picks up loose items, so the server pack can hand your game the drops and stations of friends without the pack nearby (your game then stores and feeds them as its own); and when the server pack sets the catch-up for everyone (or for nobody), that decides here, unless "Follow the server pack's settings" is off.
+- The chest service it carries talks to miikeskii's Server-Side QoL Pack on the server: it says hello to it, and when the server pack runs Far Fetched, your game learns from it which chests it hands you (a server running Far Fetched alone works as before). Add to Cart 0.5.1, Craft from Chests 0.4.1, Outfitter 0.5.4, Reserve Stock 0.1.11 and StoreStash 0.7.1 carry it too.
+
 ## 0.1.1 (2026-10-11)
 
 - Two settings' descriptions shortened: "Lights and stations a friend's game without this mod looks after" and "Stand aside while the server feeds a station". Nothing else changed.
 
 ## 0.1.0 (2026-10-09)
 
-- **First version**, as a mod of miikeskii's QoL Pack and on its own (card A77, his name for it). The pack's own replacement for the server's ServersideQoL feeding, run by each player's own game.
+- **First version**, as a mod of miikeskii's QoL Pack and on its own (his name for it). The pack's own replacement for the server's ServersideQoL feeding, run by each player's own game.
 - **Lights and fires** (on): torches, sconces, braziers, fires, the hearth, the hot tub and the rest near you are topped up with their fuel from the chests near you; a switch per kind; fires the world made and resin candles off; your reserves kept ("Resin:50" out of the box); the emptiest first when fuel is short.
 - **Stations** (off until the server's feeding is switched off): smelters, the blast furnace, the charcoal kiln, the windmill, the spinning wheel, the eitr refinery, the Frigid Kiln, the fermenter (filled and tapped), the shield generator and the Frost Foundry's fuel, fed from the chests near each by your rules: what each takes first, the kiln's woods (Wood alone), reserves (seed stock kept), maximums that count what's queued and lying at the outputs, leave-one, fuel only while there's something to process. The stone oven's fuel, the ballista and harvesting beehives, birds' nests and sap extractors are there, off.
 - **Leave one alone**: Left Alt + E at a light or station switches it between fed and left alone, saved on it.

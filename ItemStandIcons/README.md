@@ -39,6 +39,8 @@ A small mark on every item in Valheim that fits an item stand, saying which one:
 
 Open the settings in game with a configuration manager (shudnal's ConfigurationManager opens with F1). They are kept in `BepInEx\config\modprojects.itemstandicons.cfg`, which appears after the first start; in the bundle, in the section "Item Stand Icons" of its own file.
 
+"Stands that count" and "Armor stands that count" have a **Pick** button beside their text box there, which opens a window of everything the list can hold, each with its picture: a click puts a thing on the list or takes it off. The text box stays for typing.
+
 | Setting | Default | What it does |
 |---|---|---|
 | Enabled | **off** | Off takes every mark off the icons at once; on brings them back (with "Show the marks" on). |

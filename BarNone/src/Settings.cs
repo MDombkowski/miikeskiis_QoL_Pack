@@ -1,5 +1,6 @@
 using BepInEx.Configuration;
 using QoLMods.Kit;
+using QoLMods.ListPicker;
 using UnityEngine;
 
 namespace BarNone
@@ -278,7 +279,26 @@ namespace BarNone
                 "On: the first time an item touches a piece, the log names the item and the piece and says whether your " +
                 "game lets it fall through. Useful to find names for the two lists. Only while \"Items: fall through " +
                 "pieces\" is on.");
+
+            // The Pick buttons in F1 (card B03): each list picked from pictures of the game's things, its text written as
+            // PieceList reads it (split at commas, any case).
+            PickerSettings.Bind(settings);
+            Lists.Attach(ReachPieces, List(ThingKind.Pieces, "The pieces you can reach through."));
+            Lists.Attach(SmokePieces, List(ThingKind.Pieces, "The pieces smoke passes through."));
+            Lists.Attach(ProjectilePieces, List(ThingKind.Pieces, "The pieces arrows, bolts and other projectiles fly through."));
+            Lists.Attach(SkyPieces, List(ThingKind.Pieces, "The pieces crops and saplings see the sky through."));
+            Lists.Attach(ItemPieces, List(ThingKind.Pieces, "The pieces items fall through."));
+            Lists.Attach(ExceptItems, List(ThingKind.Items, "Items that never fall through: your animals' food."));
         }
+
+        private static ListSpec List(ThingKind kind, string says) => new ListSpec
+        {
+            Module = Module.Name,
+            Kinds = new[] { kind },
+            Format = new ListFormat { Separators = ",", Joiner = "," },
+            Says = says,
+            Warn = text => Module.Log?.LogWarning(text),
+        };
 
         /// <summary>The key is held down now (its main key and every modifier), read through the game's input. An empty
         /// key is never held.</summary>

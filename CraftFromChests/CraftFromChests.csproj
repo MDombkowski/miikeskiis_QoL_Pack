@@ -18,7 +18,7 @@
     <TargetFramework>net472</TargetFramework>
     <AssemblyName>CraftFromChests</AssemblyName>
     <RootNamespace>CraftFromChests</RootNamespace>
-    <Version>0.4.0</Version>
+    <Version>0.6.0</Version>
     <!-- Keep the private repo's commit id out of the DLL's version text. -->
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <LangVersion>10.0</LangVersion>
@@ -81,6 +81,20 @@
       <Private>false</Private>
     </Reference>
 
+    <!-- The kit's Say: every message fitted to the screen, measured by the game's own message text (card B14) -->
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>$(ValheimManaged)\UnityEngine.UIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- The chest service's "Use this range in every mod", drawn in a configuration manager's window (card B13) -->
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(ValheimManaged)\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(ValheimManaged)\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <!-- BepInEx, HarmonyX and Jotunn, from the mod profile -->
     <Reference Include="BepInEx">
       <HintPath>$(ModProfile)\BepInEx\core\BepInEx.dll</HintPath>

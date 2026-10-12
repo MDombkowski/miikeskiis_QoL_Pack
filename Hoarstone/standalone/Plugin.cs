@@ -1,6 +1,8 @@
 using BepInEx;
 using Jotunn.Utils;
+using QoLMods.HoarstoneGround;
 using QoLMods.Kit;
+using UnityEngine;
 
 namespace Hoarstone
 {
@@ -16,6 +18,20 @@ namespace Hoarstone
     public sealed class Plugin : BaseUnityPlugin
     {
         private ModuleHost host;
+
+        /// <summary>Whether this release runs Hoarstone and it's switched on, for another module's single release (the
+        /// Hoarstone ground part, Ground.OnProperty). Permanent, as a setting's key is.</summary>
+        public bool GroundOn => host != null && Ground.Local != null && Ground.Local.On;
+
+        /// <summary>Whether a point lies inside a settlement's shape of the given layers (Ground.InsideMethod). Permanent.</summary>
+        public bool GroundInside(Vector3 point, int layers) => GroundOn && Ground.Local.Inside(point, layers);
+
+        /// <summary>The nearest Hoarstone within the distance (Ground.StoneMethod). Permanent.</summary>
+        public bool GroundNearestStone(Vector3 from, float within, out Vector3 stone)
+        {
+            stone = from;
+            return GroundOn && Ground.Local.NearestStone(from, within, out stone);
+        }
 
         private void Awake()
         {

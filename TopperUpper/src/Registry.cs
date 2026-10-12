@@ -50,12 +50,32 @@ namespace TopperUpper
         /// <summary>How many feeds in a row found nothing to give: it's looked at less often meanwhile (Loop).</summary>
         internal int Barren;
 
+        /// <summary>When it loaded on this computer (Time.time at its Awake).</summary>
+        internal readonly float LoadedAt;
+
+        /// <summary>Its catch-up for this load is settled (CatchUps): done, or not wanted. Once per load.</summary>
+        internal bool CatchUpDone;
+
+        /// <summary>Another player's game looked after it here before this game did: that game ran it, so it has no time
+        /// to catch up on for this game (CatchUps).</summary>
+        internal bool OwnedElsewhere;
+
+        /// <summary>When its catch-up began to wait for the server pack's answer and the chests (Time.time), or below 0.</summary>
+        internal float CatchUpWaitSince = -1f;
+
+        /// <summary>When a fermenter waiting for its catch-up was last looked at (CatchUps.Tick: once a second).</summary>
+        internal float CatchUpLookedAt = -1000f;
+
+        /// <summary>When the wind was last looked at for a windmill (Winds.Note).</summary>
+        internal float WindNotedAt = -1000f;
+
         internal Fed(MonoBehaviour component, FedType type, ZNetView view)
         {
             Component = component;
             Type = type;
             View = view;
             Prefab = Utils.GetPrefabName(component.gameObject);
+            LoadedAt = Time.time;
         }
 
         /// <summary>The prefab of the object its record belongs to: its own, or (the battering ram's smelter sits on a
@@ -121,6 +141,10 @@ namespace TopperUpper
                 var fed = new Fed(component, type, view);
                 ByComponent[component] = fed;
                 All.Add(fed);
+                if (type == FedType.Fermenter)
+                {
+                    CatchUps.Watch(fed);   // its catch-up is the loop's to try (a smelter's comes from its own update)
+                }
             }
             catch (System.Exception error)
             {

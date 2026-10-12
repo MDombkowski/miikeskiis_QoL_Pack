@@ -80,7 +80,7 @@ namespace Hoarstone
             if (Pressed() && TakesKeys())
             {
                 showAll = !showAll;
-                Player.m_localPlayer?.Message(MessageHud.MessageType.TopLeft, showAll ? "Settlement outlines shown" : "Settlement outlines hidden");
+                QoLMods.Kit.Say.TopLeft(showAll ? "Settlement outlines shown" : "Settlement outlines hidden");
             }
             PointAtPlacing();
             bool pointing = now <= pointedUntil;

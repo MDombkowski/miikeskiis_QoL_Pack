@@ -2,7 +2,7 @@
 
 ## 0.1.1 (2026-10-06)
 
-- **miikeskii's own settings are the defaults now** (card A63): circles for Haldor, Hildir and the Bog Witch are all on out of the box.
+- **miikeskii's own settings are the defaults now**: circles for Haldor, Hildir and the Bog Witch are all on out of the box.
 - An older settings file moves to the new defaults once, only where it still holds the old default: a setting changed by hand stays as it is (the kit's new `ModuleSettings.MovedDefault`, remembered in a hidden setting, `DefaultsMoved`). The log names what moved.
 
 ## 0.1.0 (2026-09-25)

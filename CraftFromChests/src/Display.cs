@@ -18,8 +18,10 @@ namespace CraftFromChests
         private static readonly Dictionary<TMP_Text, (bool Auto, float Min, float Max)> Fitted = new Dictionary<TMP_Text, (bool, float, float)>();
 
         /// <summary>After the game drew one requirement: "have/need" and its colour, or the game's own look when the mod
-        /// doesn't count chests there.</summary>
-        internal static void Requirement(Transform element, Piece.Requirement requirement, Player player, bool craft, int quality, int multiplier)
+        /// doesn't count chests there. <paramref name="ownMultiplier"/>: the multiplier is the whole amount being crafted
+        /// (card B17), not the game's, so even the game's own look is written again with it.</summary>
+        internal static void Requirement(Transform element, Piece.Requirement requirement, Player player, bool craft, int quality, int multiplier,
+                                         bool ownMultiplier)
         {
             Transform child = element.Find("res_amount");
             TMP_Text amount = child != null ? child.GetComponent<TMP_Text>() : null;
@@ -36,6 +38,15 @@ namespace CraftFromChests
             {
                 PutBack(amount);
                 LockBadge.Hide(amount);
+                if (ownMultiplier && need > 0)
+                {
+                    // The game's look, for the whole amount: what's needed, flashing red while he carries less.
+                    amount.text = need.ToString();
+                    bool free = player.NoCostCheat() || ZoneSystem.instance.GetGlobalKey(craft ? GlobalKeys.NoCraftCost : GlobalKeys.NoBuildCost);
+                    amount.color = !free && player.GetInventory().CountItems(requirement.m_resItem.m_itemData.m_shared.m_name) < need && Mathf.Sin(Time.time * 10f) > 0f
+                        ? Color.red
+                        : Color.white;
+                }
                 return;
             }
             string name = requirement.m_resItem.m_itemData.m_shared.m_name;
@@ -48,6 +59,11 @@ namespace CraftFromChests
             if (carried < need && have >= need)
             {
                 amount.color = Mathf.Sin(Time.time * 10f) > 0f ? Settings.FromChestsColor.Value : Color.white;
+            }
+            else if (ownMultiplier)
+            {
+                // The game judged its own amount: judged again on the whole one, in the game's colours.
+                amount.color = have < need && Mathf.Sin(Time.time * 10f) > 0f ? Color.red : Color.white;
             }
             // Short even with the chests: the game's red flash stays. Enough on him: the game's white stays.
         }
@@ -171,7 +187,12 @@ namespace CraftFromChests
             {
                 return;
             }
-            Module.Guard("showing what the chests hold", () => Display.Requirement(elementRoot, req, player, craft, quality, craftMultiplier));
+            Module.Guard("showing what the chests hold", () =>
+            {
+                // The whole amount being crafted (card B17), else the game's own multiplier.
+                int multiplier = craft && Module.IsOn ? Batches.LabelMultiplier(craftMultiplier) : craftMultiplier;
+                Display.Requirement(elementRoot, req, player, craft, quality, multiplier, multiplier != craftMultiplier);
+            });
         }
     }
 

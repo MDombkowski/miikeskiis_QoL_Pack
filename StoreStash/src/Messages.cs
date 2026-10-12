@@ -2,17 +2,14 @@ using System.Collections.Generic;
 using System.Text;
 using QoLMods.Catalogue;
 using QoLMods.Chests;
-using TMPro;
 using UnityEngine;
 
 namespace StoreStash
 {
     /// <summary>
     /// What he's told, as the game's own messages are: top left, or in the middle of the screen. Every message is fitted to
-    /// the screen first (Fit, card A82): the game's message texts never wrap (TextMeshPro, no wrapping, overflow: the
-    /// middle one 40 points, centred on a 257-unit box, the top-left one 20 points from about 96 units in, both read from
-    /// the game's HudMessage and TopLeftMessage prefabs), so a long line ran off both sides of the screen; a line too wide
-    /// is broken at spaces into lines that fit, measured by the game's own text.
+    /// the screen first, by the kit's Say.Fit (card A82's fitter, written here first and the whole pack's since card B14):
+    /// a line too wide for the screen is broken at spaces into lines that fit, measured by the game's own text.
     /// </summary>
     internal static class Messages
     {
@@ -23,51 +20,7 @@ namespace StoreStash
         internal const int MostKinds = 4;
 
         /// <summary>Shows a message to him. Only the scratch test harness sets another (to read what he's told).</summary>
-        internal static System.Action<MessageHud.MessageType, string> Say = (where, text) =>
-        {
-            Player player = Player.m_localPlayer;
-            if (player != null)   // Unity's own null test: a destroyed player isn't null to ?.
-            {
-                player.Message(where, text);
-            }
-        };
-
-        /// <summary>How much of the screen's width a message leaves free on each side, as a share of it (card A82).</summary>
-        internal const float Margin = 0.05f;
-
-        /// <summary>How wide a line shows in that kind of message, in the HUD's own units, measured by the game's own
-        /// message text (its font, its size); null without a HUD (the text is then sent as it is). Only the scratch test
-        /// harness sets another.</summary>
-        internal static System.Func<MessageHud.MessageType, System.Func<string, float>> Measure = where =>
-        {
-            TMP_Text text = MessageHold.TextOf(where);
-            if (text == null)
-            {
-                return null;
-            }
-            float scale = ToScreen(text);
-            return line => text.GetPreferredValues(line).x * scale;
-        };
-
-        // The text's own units in the screen's (its root canvas's), should the text or anything between be scaled (review
-        // N7): the room is measured in the screen's units.
-        private static float ToScreen(TMP_Text text)
-        {
-            Canvas canvas = text.canvas;
-            Canvas root = canvas != null ? canvas.rootCanvas : null;
-            float screen = root != null ? root.transform.lossyScale.x : 0f;
-            float own = text.rectTransform.lossyScale.x;
-            return screen > 0f && own > 0f ? own / screen : 1f;
-        }
-
-        /// <summary>How wide a line of that kind may be, in the same units: the screen's width as the HUD's canvas has it,
-        /// less Margin on each side, and for a top-left message less where its text starts; 0 without a HUD. Only the
-        /// scratch test harness sets another.</summary>
-        internal static System.Func<MessageHud.MessageType, float> Room = GameRoom;
-
-        /// <summary>The text as the game will show it ($ words in his language): MessageHud localises every message. Only
-        /// the scratch test harness sets another.</summary>
-        internal static System.Func<string, string> Localize = text => Localization.instance != null ? Localization.instance.Localize(text) : text;
+        internal static System.Action<MessageHud.MessageType, string> Say = (where, text) => QoLMods.Kit.Say.To(where, text);
 
         internal static void TopLeft(string text) => Show(MessageHud.MessageType.TopLeft, text);
 
@@ -104,7 +57,7 @@ namespace StoreStash
                 }
             }
             MessageHud.MessageType type = place == MessagePlace.Center ? MessageHud.MessageType.Center : MessageHud.MessageType.TopLeft;
-            text = Fit(type, text);   // so the hold knows the message by its lines as shown
+            text = QoLMods.Kit.Say.Fit(type, text);   // so the hold knows the message by its lines as shown
             Show(type, text);
             MessageHold.Start(type, text);
         }
@@ -315,159 +268,6 @@ namespace StoreStash
 
         private static string Count(int number, string one, string many) => $"{number} {(number == 1 ? one : many)}";
 
-        private static void Show(MessageHud.MessageType where, string text) => Say(where, Fit(where, text));
-
-        /// <summary>
-        /// A message fitted to the screen (card A82): as the game will show it (localised), every line wider than the room
-        /// for that kind of message broken at spaces into lines that fit. A message that fits already is sent exactly as it
-        /// was. Fitting a fitted message changes nothing. Never fails: without a HUD, or if measuring goes wrong, the text
-        /// goes as it is.
-        /// </summary>
-        internal static string Fit(MessageHud.MessageType where, string text)
-        {
-            if (string.IsNullOrEmpty(text))
-            {
-                return text;
-            }
-            try
-            {
-                System.Func<string, float> width = Measure(where);
-                float room = Room(where);
-                if (width == null || !(room > 0f))
-                {
-                    return text;
-                }
-                string shown = Localize(text) ?? text;
-                string fitted = Wrap(shown, width, room);
-                return ReferenceEquals(fitted, shown) ? text : fitted;
-            }
-            catch (System.Exception)
-            {
-                return text;   // a message as it was beats no message
-            }
-        }
-
-        /// <summary>
-        /// Breaks every line of <paramref name="text"/> wider than <paramref name="room"/> (as <paramref name="width"/>
-        /// measures it) at spaces into lines that fit, each as full as it can be; a single word wider than the room (a name
-        /// in a language written without spaces) is broken between its letters, never inside a letter of two halves.
-        /// Spaces are kept as they were, but the one each break replaces. Returns the very same string when every line fits
-        /// already. Plain code, for the scratch test harness too.
-        /// </summary>
-        internal static string Wrap(string text, System.Func<string, float> width, float room)
-        {
-            if (string.IsNullOrEmpty(text) || width == null || !(room > 0f))
-            {
-                return text;
-            }
-            string[] lines = text.Split('\n');
-            var output = new List<string>(lines.Length + 2);
-            bool changed = false;
-            foreach (string line in lines)
-            {
-                if (width(line) <= room)
-                {
-                    output.Add(line);
-                    continue;
-                }
-                changed = true;
-                var current = new StringBuilder();
-                bool started = false;
-                foreach (string word in line.Split(' '))
-                {
-                    if (word.Length > 0 && width(word) > room)
-                    {
-                        // Too wide on a line of its own: a line of its own, broken between letters.
-                        if (started && current.Length > 0)
-                        {
-                            output.Add(current.ToString());
-                        }
-                        List<string> pieces = Pieces(word, width, room);
-                        for (int p = 0; p < pieces.Count - 1; p++)
-                        {
-                            output.Add(pieces[p]);
-                        }
-                        current.Clear().Append(pieces[pieces.Count - 1]);
-                        started = true;
-                        continue;
-                    }
-                    if (!started)
-                    {
-                        current.Append(word);
-                        started = true;
-                        continue;
-                    }
-                    if (word.Length > 0 && width(current + " " + word) > room)
-                    {
-                        output.Add(current.ToString());
-                        current.Clear().Append(word);
-                    }
-                    else
-                    {
-                        current.Append(' ').Append(word);
-                    }
-                }
-                output.Add(current.ToString());
-            }
-            return changed ? string.Join("\n", output) : text;
-        }
-
-        // A word too wide for a line, in pieces that fit, as full as they can be: never between the two halves of a letter
-        // (a surrogate pair), and at least one letter a piece.
-        private static List<string> Pieces(string word, System.Func<string, float> width, float room)
-        {
-            var pieces = new List<string>();
-            int start = 0;
-            while (start < word.Length)
-            {
-                int end = start + Letter(word, start);
-                while (end < word.Length)
-                {
-                    int next = end + Letter(word, end);
-                    if (width(word.Substring(start, next - start)) > room)
-                    {
-                        break;
-                    }
-                    end = next;
-                }
-                pieces.Add(word.Substring(start, end - start));
-                start = end;
-            }
-            return pieces;
-        }
-
-        // How many chars the letter at i takes: two for a surrogate pair.
-        private static int Letter(string text, int i) =>
-            char.IsHighSurrogate(text[i]) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1]) ? 2 : 1;
-
-        // The room for a line of that kind, from the HUD's own canvas: the middle message centred where its text is, the
-        // top-left one from where its text starts; 0 without a HUD.
-        private static float GameRoom(MessageHud.MessageType where)
-        {
-            TMP_Text text = MessageHold.TextOf(where);
-            Canvas canvas = text != null ? text.canvas : null;
-            Canvas root = canvas != null ? canvas.rootCanvas : null;
-            RectTransform screen = root != null ? root.transform as RectTransform : null;
-            if (screen == null)
-            {
-                return 0f;
-            }
-            Rect area = screen.rect;
-            if (!(area.width > 0f))
-            {
-                return 0f;
-            }
-            var corners = new Vector3[4];
-            text.rectTransform.GetWorldCorners(corners);   // bottom left, top left, top right, bottom right
-            float left = screen.InverseTransformPoint(corners[0]).x;
-            float right = screen.InverseTransformPoint(corners[2]).x;
-            float margin = area.width * Margin;
-            if (where == MessageHud.MessageType.Center)
-            {
-                float middle = (left + right) / 2f;   // the game centres its middle message on its box
-                return 2f * (Mathf.Min(middle - area.xMin, area.xMax - middle) - margin);
-            }
-            return area.xMax - margin - Mathf.Max(left, area.xMin);
-        }
+        private static void Show(MessageHud.MessageType where, string text) => Say(where, QoLMods.Kit.Say.Fit(where, text));
     }
 }

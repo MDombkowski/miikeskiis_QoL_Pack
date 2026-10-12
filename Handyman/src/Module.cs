@@ -18,7 +18,7 @@ namespace Handyman
 
         internal const string Name = "Handyman";
 
-        internal const string Version = "0.1.1";
+        internal const string Version = "0.1.2";
 
         private static Module current;
 

@@ -293,7 +293,7 @@ namespace XPortalMapPicker
         {
             if (MessageHud.instance != null)
             {
-                MessageHud.instance.ShowMessage(MessageHud.MessageType.TopLeft, text);
+                QoLMods.Kit.Say.TopLeft(text, log: true);
             }
         }
     }

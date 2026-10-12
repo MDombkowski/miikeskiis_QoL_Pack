@@ -89,33 +89,7 @@ namespace TopperUpper
             var owned = new List<Container>();
             var contents = new List<Inventory>();
             var chestModels = new List<StackPlanner.Chest>();
-            foreach (Container chest in chests)
-            {
-                if (chest == null || owned.Contains(chest) ||
-                    ChestUse.WhyNot(ChestClaims.MayChange(chest), Obliterator.Is(chest), ChestClaims.IsKeptForCraft(chest),
-                                    ChestReserve.IsReserved(chest), rules.Chests.UseReserved) != null)
-                {
-                    continue;   // never the Obliterator (M2) or a chest kept for a craft (m4)
-                }
-                ChestHooks.Reload(chest);   // the newest copy, in the frame of the put
-                Inventory inventory = chest.GetInventory();
-                owned.Add(chest);
-                contents.Add(inventory);
-                var model = new StackPlanner.Chest { Cells = inventory.GetWidth() * inventory.GetHeight() };
-                foreach (ItemDrop.ItemData held in inventory.GetAllItems())
-                {
-                    model.Stacks.Add(new StackPlanner.Item
-                    {
-                        Name = held.m_shared.m_name,
-                        Quality = held.m_quality,
-                        WorldLevel = held.m_worldLevel,
-                        Amount = held.m_stack,
-                        MaxStack = held.m_shared.m_maxStackSize,
-                    });
-                }
-                chestModels.Add(model);
-            }
-            if (owned.Count == 0)
+            if (!Chests(chests, rules, owned, contents, chestModels))
             {
                 return result;
             }
@@ -144,24 +118,133 @@ namespace TopperUpper
             }
             finally
             {
-                foreach (Container chest in changed)
+                SendAndHold(changed);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Puts stacks lying in a scratch inventory (the catch-up's products, made at once: card A93) into the chests the
+        /// same way as Items: the same routing and planning, the same chests (this game's, changeable now, never the
+        /// Obliterator, a chest kept for a craft or a reserved one unless the rules use them), each put measured (ChestPut,
+        /// the mirror of a take: what arrived leaves the scratch inventory, exactly). What doesn't fit stays in the scratch
+        /// inventory, for the caller. Every chest put into is held and sent in a finally.
+        /// </summary>
+        internal static StowResult FromInventory(Inventory from, IList<ItemDrop.ItemData> stacks, IList<Container> chests, StackRules rules)
+        {
+            var result = new StowResult();
+            var items = new List<ItemDrop.ItemData>();
+            var models = new List<StackPlanner.Item>();
+            foreach (ItemDrop.ItemData item in stacks)
+            {
+                if (item?.m_shared == null || item.m_stack <= 0 || item.m_dropPrefab == null || !from.ContainsItem(item) || items.Contains(item))
                 {
-                    try
+                    continue;
+                }
+                items.Add(item);
+                models.Add(new StackPlanner.Item
+                {
+                    Name = item.m_shared.m_name,
+                    Quality = item.m_quality,
+                    WorldLevel = item.m_worldLevel,
+                    Amount = item.m_stack,
+                    MaxStack = item.m_shared.m_maxStackSize,
+                });
+            }
+            if (items.Count == 0)
+            {
+                return result;
+            }
+            var owned = new List<Container>();
+            var contents = new List<Inventory>();
+            var chestModels = new List<StackPlanner.Chest>();
+            if (!Chests(chests, rules, owned, contents, chestModels))
+            {
+                return result;
+            }
+            List<IList<IList<int>>> tiers = StackRouting.Tiers(items, owned, contents, rules)
+                .ConvertAll(each => (IList<IList<int>>)each.ConvertAll(tier => (IList<int>)tier));
+            List<StackPlanner.Put> plan = StackPlanner.Plan(models, chestModels, i => tiers[i], rules.TopUpFirst);
+            var changed = new HashSet<Container>();
+            try
+            {
+                foreach (StackPlanner.Put put in plan)
+                {
+                    Container chest = owned[put.Chest];
+                    ItemDrop.ItemData item = items[put.Item];
+                    string name = item.m_shared.m_name;
+                    bool marked = changed.Add(chest);   // first: a throw inside the put still sends and holds it
+                    int moved = ChestPut.Put(chest, from, item, put.Amount, put.TopUpOnly, rules.Chests.UseReserved);
+                    if (moved > 0)
                     {
-                        ZNetView view = ChestHooks.NetView(chest);
-                        if (view != null && view.IsValid())
-                        {
-                            ChestClaims.Hold(chest);
-                            ZDOMan.instance?.ForceSendZDO(view.GetZDO().m_uid);
-                        }
+                        result.Add(chest, name, moved);
                     }
-                    catch (Exception error)
+                    else if (marked)
                     {
-                        Module.Warn($"A chest put into couldn't be sent or held: {error}");
+                        changed.Remove(chest);
                     }
                 }
             }
+            finally
+            {
+                SendAndHold(changed);
+            }
             return result;
+        }
+
+        // The chests a put may use, each reloaded (the newest copy, in the frame of the put), with what they hold as the
+        // planner sees it. False when none may be used.
+        private static bool Chests(IList<Container> chests, StackRules rules, List<Container> owned, List<Inventory> contents, List<StackPlanner.Chest> chestModels)
+        {
+            foreach (Container chest in chests)
+            {
+                if (chest == null || owned.Contains(chest) ||
+                    ChestUse.WhyNot(ChestClaims.MayChange(chest), Obliterator.Is(chest), ChestClaims.IsKeptForCraft(chest),
+                                    ChestReserve.IsReserved(chest), rules.Chests.UseReserved) != null)
+                {
+                    continue;   // never the Obliterator (M2) or a chest kept for a craft (m4)
+                }
+                ChestHooks.Reload(chest);   // the newest copy, in the frame of the put
+                Inventory inventory = chest.GetInventory();
+                owned.Add(chest);
+                contents.Add(inventory);
+                var model = new StackPlanner.Chest { Cells = inventory.GetWidth() * inventory.GetHeight() };
+                foreach (ItemDrop.ItemData held in inventory.GetAllItems())
+                {
+                    model.Stacks.Add(new StackPlanner.Item
+                    {
+                        Name = held.m_shared.m_name,
+                        Quality = held.m_quality,
+                        WorldLevel = held.m_worldLevel,
+                        Amount = held.m_stack,
+                        MaxStack = held.m_shared.m_maxStackSize,
+                    });
+                }
+                chestModels.Add(model);
+            }
+            return owned.Count > 0;
+        }
+
+        // Every chest changed is held (other players' requests for it dropped until their copies have reloaded) and its
+        // record sent at once. Never throws: it runs in a finally.
+        private static void SendAndHold(IEnumerable<Container> changed)
+        {
+            foreach (Container chest in changed)
+            {
+                try
+                {
+                    ZNetView view = ChestHooks.NetView(chest);
+                    if (view != null && view.IsValid())
+                    {
+                        ChestClaims.Hold(chest);
+                        ZDOMan.instance?.ForceSendZDO(view.GetZDO().m_uid);
+                    }
+                }
+                catch (Exception error)
+                {
+                    Module.Warn($"A chest put into couldn't be sent or held: {error}");
+                }
+            }
         }
     }
 }

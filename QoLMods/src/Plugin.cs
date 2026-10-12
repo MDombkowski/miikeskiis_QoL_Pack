@@ -20,6 +20,7 @@ namespace QoLMods
     // Craft from Chests: other mods that take from chests for crafting, so they have started when it looks, and it stays off
     [BepInDependency(CraftFromChests.Module.AzuCraftyBoxes, BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency(CraftFromChests.Module.CraftFromContainers, BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency(CraftFromChests.Module.MyLittleUI, BepInDependency.DependencyFlags.SoftDependency)]   // Craft from Chests' batches: MyLittleUI's Multicraft hides while they're on
     [BepInDependency(ReserveStock.Hex.Guid, BepInDependency.DependencyFlags.SoftDependency)]                // Reserve Stock and StoreStash: HexQuickStackStorage (StoreStash stays off while it runs)
     // Portion Control: the mods that add buttons to the same split window (it stands aside for them) and CurrencyPocket
     [BepInDependency(PortionControl.Module.BetterSplitDialog, BepInDependency.DependencyFlags.SoftDependency)]
@@ -42,7 +43,7 @@ namespace QoLMods
     [NetworkCompatibility(CompatibilityLevel.NotEnforced, VersionStrictness.None)]
     public sealed class Plugin : BaseUnityPlugin
     {
-        internal const string Version = "0.45.1";
+        internal const string Version = "0.57.1";
 
         private readonly List<ModuleHost> hosts = new List<ModuleHost>();
 
@@ -73,6 +74,10 @@ namespace QoLMods
             new MenUI.Module(),
             new Hoarstone.Module(),
             new AFKRaidBlocker.Module(),
+            new WorldSettings.Module(),
+            new ZFighter.Module(),
+            new QuickFix.Module(),
+            new NapTime.Module(),
         };
 
         /// <summary>The version of the module with this id if the bundle runs it, or null if the bundle doesn't hold it or

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using BepInEx.Configuration;
 using Hoarstone.Shapes;
 using QoLMods.Kit;
+using QoLMods.ListPicker;
 using UnityEngine;
 
 namespace Hoarstone
@@ -131,6 +132,17 @@ namespace Hoarstone
                 "Pieces left out of every settlement, by their prefab names, separated by commas (for example portal_wood). " +
                 "Ships and carts never count, since they move.");
             NeverCount.SettingChanged += (sender, args) => NeverCountVersion++;
+            // The Pick buttons in F1 (card B03): this list and the cost's picked from pictures of the game's things, their
+            // text written as World\Records and Shapes\CostText read it.
+            PickerSettings.Bind(bound);
+            Lists.Attach(NeverCount, new ListSpec
+            {
+                Module = Module.Name,
+                Kinds = new[] { ThingKind.Pieces },
+                Format = new ListFormat { Separators = ",", Joiner = ", " },
+                Says = "Pieces left out of every settlement (ships and carts never count anyway).",
+                Warn = text => Module.Log?.LogWarning(text),
+            });
             EndFold();
 
             BeginFold(ShapePart);
@@ -176,6 +188,27 @@ namespace Hoarstone
                 "Taking one down gives back what it cost when it was placed. The game that looks after it makes that drop: " +
                 "where that's the game of a friend without this mod, it drops a Ward's materials, since to that game it's a " +
                 "Ward. Left empty or unreadable, it costs what a Ward does.");
+            Lists.Attach(Cost, new ListSpec
+            {
+                Module = Module.Name,
+                Kinds = new[] { ThingKind.Items },
+                Format = new ListFormat
+                {
+                    Separators = ",;",
+                    Joiner = ", ",
+                    Amounts = true,
+                    NewAmount = 1,
+                    LeastAmount = 1,
+                    MostAmount = 9999,
+                    AmountLeftOut = 1,
+                    AmountsAddUp = true,
+                    Ordered = true,
+                    IgnoreCase = false,
+                },
+                Says = "What placing a Hoarstone costs, in the order the build menu shows it.",
+                EmptyMeans = "a Ward's cost",
+                Warn = text => Module.Log?.LogWarning(text),
+            });
             AlsoAWard = Add(StonePart, "AlsoAWard", false, "It's also a ward",
                 "Off (the default): a Hoarstone is no ward at all, and E on it shows or hides its settlement's outline. On: " +
                 "its placer can switch it on as a Ward with E, and then it protects its area from everyone not on its list, " +

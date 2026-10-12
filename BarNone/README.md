@@ -69,6 +69,8 @@ If you prefer another mod for a part, switch that part of Bar None off and use t
 
 Open the settings in game with a configuration manager (shudnal's ConfigurationManager opens with F1). They are kept in `BepInEx\config\modprojects.barnone.cfg`, which appears after the first start, one section per part; in the bundle, in the section "Bar None" of its own file.
 
+The five lists of pieces and "Items: except these items" have a **Pick** button beside their text box there, which opens a window of everything the list can hold, each with its picture: a click puts a thing on the list or takes it off. The text box stays for typing.
+
 | Setting | Default | What it does |
 |---|---|---|
 | Enabled | on | Off stops every part at once. |

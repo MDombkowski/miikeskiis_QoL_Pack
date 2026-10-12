@@ -58,6 +58,10 @@ namespace Outfitter.Equip
         /// counted in its hand): dressing puts one back from here (StayOn).</summary>
         internal readonly Dictionary<ItemDrop.ItemData, WornAs> OffHands = new Dictionary<ItemDrop.ItemData, WornAs>();
 
+        /// <summary>What this exchange took off to go away (card B18): a later round's plan still sends it away as the worn
+        /// piece it was (PlanInput.OffToGo), so the swap modes route it again and the result lists it if it stays.</summary>
+        internal readonly HashSet<ItemDrop.ItemData> OffToGo = new HashSet<ItemDrop.ItemData>();
+
         /// <summary>Set once the last round is over.</summary>
         internal bool Over { get; private set; }
 
@@ -445,10 +449,17 @@ namespace Outfitter.Equip
                 foreach (ItemDrop.ItemData item in plan.TakeOff)
                 {
                     // What doesn't go away comes off whatever the chests do: it stays with him (the request), or the
-                    // loadout carries it unworn (R2, finding 3).
+                    // loadout carries it unworn (R2, finding 3). With "What I wear that the loadout doesn't" at ComesOff
+                    // (card B18), what goes away comes off too when no chest takes it, and stays with him.
                     bool replaced = Replaced(plan, item);
-                    if (!goesAway.ContainsKey(item) || routed.Contains(item) || replaced)
+                    bool goes = goesAway.ContainsKey(item);
+                    bool offWithoutChest = rules.OffWithoutChestFor(item);
+                    if (ComesOff.InExchange(goes, routed.Contains(item), replaced, offWithoutChest))
                     {
+                        if (goes)
+                        {
+                            OffToGo.Add(item);   // a later round still puts it away as the worn piece it was
+                        }
                         WornAs was = wearer.WornAs(item);
                         if (was == WornAs.None)
                         {
@@ -460,7 +471,7 @@ namespace Outfitter.Equip
                         {
                             OffHands[item] = was;
                         }
-                        if (goesAway.ContainsKey(item))
+                        if (ComesOff.BackOnIfStillHere(goes, replaced, offWithoutChest))
                         {
                             cameOff.Add(item);
                         }
@@ -730,6 +741,7 @@ namespace Outfitter.Equip
                 KeepsTakenOff = request.KeepsTakenOff,
                 Stays = request.Stays,
                 KeptEarlier = Result.TakenOff,
+                OffToGo = OffToGo,
                 FoodsChosen = foods,
             };
             input.Chests.AddRange(views);

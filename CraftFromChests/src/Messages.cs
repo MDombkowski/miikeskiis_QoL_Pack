@@ -80,13 +80,9 @@ namespace CraftFromChests
             }
         }
 
-        internal static void Center(string text)
-        {
-            Player player = Player.m_localPlayer;
-            if (player != null)   // Unity's own null test: a destroyed player isn't null to ?.
-            {
-                player.Message(MessageHud.MessageType.Center, text);
-            }
-        }
+        internal static void Center(string text) => QoLMods.Kit.Say.Center(text);   // fitted to the screen (card B14)
+
+        /// <summary>At the top left, where it doesn't cover a crafting message the game or the chests just gave.</summary>
+        internal static void TopLeft(string text) => QoLMods.Kit.Say.TopLeft(text);
     }
 }

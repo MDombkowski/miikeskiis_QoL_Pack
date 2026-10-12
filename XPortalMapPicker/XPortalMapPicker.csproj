@@ -17,7 +17,7 @@
     <TargetFramework>net472</TargetFramework>
     <AssemblyName>XPortalMapPicker</AssemblyName>
     <RootNamespace>XPortalMapPicker</RootNamespace>
-    <Version>0.6.2</Version>
+    <Version>0.6.3</Version>
     <!-- Keep the private repo's commit id out of the DLL's version text. -->
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <LangVersion>10.0</LangVersion>

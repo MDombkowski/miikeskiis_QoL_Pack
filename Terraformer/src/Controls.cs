@@ -364,15 +364,15 @@ namespace Terraformer
             switch (Settings.Messages.Value)
             {
                 case MessageChoice.Centre:
-                    player.Message(MessageHud.MessageType.Center, text);
+                    QoLMods.Kit.Say.Center(text);
                     break;
                 case MessageChoice.TopLeft:
-                    player.Message(MessageHud.MessageType.TopLeft, text);
+                    QoLMods.Kit.Say.TopLeft(text);
                     break;
                 default:
                     if (always)
                     {
-                        player.Message(MessageHud.MessageType.Center, text);
+                        QoLMods.Kit.Say.Center(text);
                     }
                     break;
             }

@@ -196,17 +196,7 @@ namespace StoreStash
             return true;
         }
 
-        /// <summary>The game's text for messages of that kind; null without a HUD. Unity's own null test: a destroyed one
-        /// isn't null to ?. (Messages measures with it too.)</summary>
-        internal static TMP_Text TextOf(MessageHud.MessageType type)
-        {
-            MessageHud hud = MessageHud.instance;
-            if (hud == null)
-            {
-                return null;
-            }
-            TMP_Text text = type == MessageHud.MessageType.Center ? hud.m_messageCenterText : hud.m_messageText;
-            return text != null ? text : null;
-        }
+        /// <summary>The game's text for messages of that kind; null without a HUD (the kit's, which measures with it).</summary>
+        internal static TMP_Text TextOf(MessageHud.MessageType type) => QoLMods.Kit.Say.TextOf(type);
     }
 }

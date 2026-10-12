@@ -177,7 +177,7 @@ namespace Outfitter.Window
             }
             if (!Open || Popup.Showing)
             {
-                Tips.Update(false);
+                Tips.Update(false, Popup.Showing);   // over the pop-up only an item's name beside its icon (card B21)
             }
             if (Open)
             {
@@ -1142,7 +1142,7 @@ namespace Outfitter.Window
             Ui.SetButtonText(equipButton, "Equip now");   // never "Equip at" a stand's name: read as a biome's (his words, 2026-10-07)
             weight.text = WeightLine(player);
             weight.color = Ui.Plain;
-            if (preview != null && Settings.WeightWarning.Value && After(player) > player.GetMaxCarryWeight())
+            if (preview != null && Settings.WeightWarning.Value && After(player) > MaxAfter(player))
             {
                 weight.color = Ui.Bad;
             }
@@ -1360,6 +1360,83 @@ namespace Outfitter.Window
             return Mathf.Max(0f, total);
         }
 
+        // What he may carry after the equip, by the preview (card B18, the review): the game's own maximum now, less the
+        // carry weight each worn piece that comes off gives (a Megingjord's), plus what each piece the loadout puts on gives,
+        // as Player.GetMaxCarryWeight adds an equip status effect's m_addMaxCarryWeight (scaled by the world's carry rate).
+        // What surely comes off is what the plan takes off and its setting takes off whether or not a chest takes it; a piece
+        // that comes off only into a chest counts as kept (as before 0.6.0: the window doesn't know where the routing puts
+        // it), and a piece the loadout puts in its place counts by its own bonus.
+        private static float MaxAfter(Player player)
+        {
+            float max = player.GetMaxCarryWeight();
+            if (preview == null)
+            {
+                return max;
+            }
+            EquipRules rules = EquipRules.FromSettings(Settings.Mode.Value);
+            var now = new Dictionary<string, float>();
+            var after = new Dictionary<string, float>();
+            foreach (ItemDrop.ItemData item in player.GetInventory().GetAllItems())
+            {
+                if (!player.IsItemEquiped(item))
+                {
+                    continue;
+                }
+                CarryBonus(item, now);
+                bool surelyOff = preview.TakeOff.Contains(item) && (rules.OffWithoutChestFor(item) || FilledByLoadout(item));
+                if (!surelyOff)
+                {
+                    CarryBonus(item, after);
+                }
+            }
+            foreach (Want want in preview.Wants)
+            {
+                if (want.Worn == Loadouts.WornAs.None)
+                {
+                    continue;
+                }
+                ItemDrop.ItemData piece = want.Have.Count > 0 ? want.Have[0].Item : want.Takes.Count > 0 ? want.Takes[0].Copy ?? want.Template : null;
+                CarryBonus(piece, after);
+            }
+            float change = 0f;
+            foreach (float bonus in after.Values)
+            {
+                change += bonus;
+            }
+            foreach (float bonus in now.Values)
+            {
+                change -= bonus;
+            }
+            return Mathf.Max(0f, max + change * Game.m_carryWeightRate);
+        }
+
+        // Whether the loadout puts a piece of its own in this worn piece's body place (the game then takes it off).
+        private static bool FilledByLoadout(ItemDrop.ItemData item)
+        {
+            Loadouts.WornAs place = Matching.BodyPlace(item.m_shared.m_itemType);
+            if (place == Loadouts.WornAs.None)
+            {
+                return false;
+            }
+            foreach (Want want in preview.Wants)
+            {
+                if (want.Worn == place && want.HaveCount + want.TakeCount > 0)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // A piece's carry weight bonus, by its equip status effect's name (the game holds one of each effect).
+        private static void CarryBonus(ItemDrop.ItemData item, Dictionary<string, float> bonuses)
+        {
+            if (item?.m_shared.m_equipStatusEffect is SE_Stats stats && stats.m_addMaxCarryWeight != 0f)
+            {
+                bonuses[stats.name] = stats.m_addMaxCarryWeight;
+            }
+        }
+
         private static string WeightLine(Player player)
         {
             if (preview == null)
@@ -1370,7 +1447,7 @@ namespace Outfitter.Window
                     ? $"{picked.Name} is empty: drag items into it from the nearby items or your inventory (beside the window) before you put it on."
                     : string.Empty;
             }
-            string carry = $"You'll carry {After(player):0} of {player.GetMaxCarryWeight():0}.";
+            string carry = $"You'll carry {After(player):0} of {MaxAfter(player):0}.";
             int missing = preview.MissingCount;
             string lacks = missing > 0 ? $" {missing} missing: {Messages.MissingWords(preview, 2)}." : string.Empty;
             int fromStands = 0;

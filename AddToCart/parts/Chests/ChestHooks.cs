@@ -70,6 +70,7 @@ namespace QoLMods.Chests
         {
             ChestShare.Uses(user);
             ServerReach.Uses(user);
+            ServerPack.Say(ServerReach.ReachKey, ServerReach.WantedText);   // the range asked of the server pack's Far Fetched
             if (!resolved)
             {
                 resolved = true;

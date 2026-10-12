@@ -36,7 +36,8 @@ namespace TopperUpper
                     }
                     foreach (Container chest in outputs)
                     {
-                        Remembered[chest.gameObject] = Settings.OutputColour.Value;
+                        // A chest both input and output (card B11) glows its own colour.
+                        Remembered[chest.gameObject] = inputs.Contains(chest) ? Settings.BothColour.Value : Settings.OutputColour.Value;
                     }
                 }
                 foreach (KeyValuePair<GameObject, Color> each in Remembered)

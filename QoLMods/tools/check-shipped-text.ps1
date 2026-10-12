@@ -10,13 +10,21 @@
 # refuses a DLL holding this computer's user folder (the build's debug path, from a build under the user profile). The
 # bundle's package.ps1 runs it over the bundle and every module before it builds, and over the built DLL before it
 # packs; any other packager (a single release's, the server pack's) can call it the same way.
-param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Paths)
+#
+# -Public: also refuses the project's own notes in what Thunderstore shows (the pack's README, CHANGELOG and gathered
+# CREDITS): a card code ("card A75", "cards A80 to A82"), a "test build" or "debug version", a runbook, a worktree, the
+# project's vault. His rule of 2026-10-12 (card B32), after a Thunderstore moderator read the changelog for whether the
+# pack was tested: a moderator or a player can misread them, and they say nothing to either.
+param([switch]$Public, [Parameter(ValueFromRemainingArguments = $true)][string[]]$Paths)
 $ErrorActionPreference = 'Stop'
 
 # Testing words, and the build notes that carried them ("By session ..., reviewed by an Opus agent, checked by a
 # scratch harness", "found in review", a session's number such as "55-B"), and "still in the works". A line about the
 # game's own behaviour ("fires, tested again a moment after the change") passes.
 $pattern = 'untested|not (yet )?tested|tested in game|not been tested|without testing|scratch harness|planted bugs?|\bOpus (agent|round)s?\b|code review|last look|found in review|in the works|\bsessions? \d+-[A-Z]\b|^\s*- By sessions?\b'
+if ($Public) {
+    $pattern += '|\bcards? [A-Z]\d{2}\b|\b[A-C]\d{2} (to|and) [A-C]\d{2}\b|\b(test|debug|diagnostic|dev) (build|version|release)s?\b|\brunbooks?\b|\bworktrees?\b|\bthe project''s vault\b'
+}
 
 $files = @()
 foreach ($path in $Paths) {
@@ -71,5 +79,5 @@ foreach ($file in $files) {
     }
 }
 if ($found.Count -gt 0) {
-    throw ("These would ship in a zip and say how a mod was tested, or that it wasn't, which belongs only in the project's docs (cards B07 and B10), or name this computer's user folder. Take them out:`n" + ($found -join "`n"))
+    throw ("These would ship in a zip and say how a mod was tested, or that it wasn't, which belongs only in the project's docs (cards B07 and B10), or name this computer's user folder" + $(if ($Public) { ", or (in what Thunderstore shows) carry the project's own notes: card codes, test builds, runbooks (card B32)" } else { "" }) + ". Take them out:`n" + ($found -join "`n"))
 }

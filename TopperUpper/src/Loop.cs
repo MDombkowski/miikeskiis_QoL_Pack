@@ -76,7 +76,7 @@ namespace TopperUpper
             Vector3 him = player.transform.position;
 
             // Every station's owner, often (a dozen frames round a base of two hundred), so the server taking one over for
-            // a moment is seen (Owners.Watch).
+            // a moment is seen (Owners.Watch); and a fed windmill's wind, noted for its catch-up (Winds.Note, every 30 s).
             OwnerLooks.Next(Registry.All.Count, Always, now, OwnersPerFrame, OwnersPerFrame, Picked);
             foreach (int index in Picked)
             {
@@ -84,6 +84,7 @@ namespace TopperUpper
                 if (fed.Alive && !fed.IsLight)
                 {
                     Owners.Watch(fed, now);
+                    Winds.Note(fed, now);
                 }
             }
 

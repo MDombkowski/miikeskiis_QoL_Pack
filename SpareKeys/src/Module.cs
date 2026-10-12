@@ -19,7 +19,7 @@ namespace SpareKeys
 
         internal const string Name = "Spare Keys";
 
-        internal const string Version = "0.2.0";
+        internal const string Version = "0.2.2";
 
         private static Module current;
 

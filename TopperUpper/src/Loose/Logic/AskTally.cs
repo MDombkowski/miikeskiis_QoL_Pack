@@ -54,8 +54,9 @@ namespace TopperUpper.Loose
     /// <summary>
     /// The server's own pickup, still on (code review n5; the freeze research, section 8.9): a vanilla server never asks a
     /// player's game for an item on the ground, so an ask from the server for one this game owns means a server mod picks
-    /// items up (ServersideQoL's AutoStore, most likely). Said once a session in the log, and once on screen while "Pick
-    /// up loose items into chests" is on, so he knows to ask his friend to switch it off.
+    /// items up (on his friend's server that was ServersideQoL's AutoStore, uninstalled on 2026-10-10; miikeskii's
+    /// Server-Side QoL Pack never asks). Said once a session in the log, and once on screen while "Pick up loose items into
+    /// chests" is on, so the server's owner can be asked to switch it off. The words name no mod (card B05, his rule 8).
     /// </summary>
     internal sealed class ServerPickup
     {

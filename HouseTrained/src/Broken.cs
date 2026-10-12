@@ -32,6 +32,16 @@ namespace HouseTrained
         PensFarHome,
         FeedHand,
         FeedSaddle,
+        TameDeathLog,
+        TameRemovedLog,
+        TameInteract,
+        TameHover,
+        SaddleInteract,
+        SaddleHover,
+        GroundIdle,
+        GroundTarget,
+        GroundFollow,
+        TameStayMark,
     }
 
     /// <summary>
@@ -110,6 +120,16 @@ namespace HouseTrained
             Feature.PensWander => "creatures wandering (BaseAI.IdleMovement)",
             Feature.FeedHand => "items used on a creature (Tameable.UseItem)",
             Feature.FeedSaddle => "items used on a creature's saddle (Sadle.UseItem)",
+            Feature.TameInteract => "E on a tame (Tameable.Interact)",
+            Feature.TameHover => "a tame's hover text (Tameable.GetHoverText)",
+            Feature.SaddleInteract => "E on a saddle (Sadle.Interact)",
+            Feature.SaddleHover => "a saddle's hover text (Sadle.GetHoverText)",
+            Feature.GroundIdle => "creatures standing about (BaseAI.IdleMovement)",
+            Feature.GroundTarget => "creatures keeping a target (MonsterAI.UpdateTarget)",
+            Feature.GroundFollow => "creatures following a player (BaseAI.Follow)",
+            Feature.TameStayMark => "the command to follow or stay (Tameable.RPC_Command)",
+            Feature.TameDeathLog => "a creature's death (Character.OnDeath)",
+            Feature.TameRemovedLog => "records removed from the world (ZDOMan.RPC_DestroyZDO)",
             _ => "creatures' spawn points (BaseAI.GetPatrolPoint)",
         };
 
@@ -139,6 +159,16 @@ namespace HouseTrained
             Feature.PensWander => "tames wander, stand at the walls and push their heads into them, as in the game,",
             Feature.FeedHand => "creatures can't be fed from the hand (throw their food on the ground, as in the game),",
             Feature.FeedSaddle => "a saddled creature is fed from the hand only while you look at it, not at its saddle,",
+            Feature.TameInteract => "E only pets tames that aren't wolves, as in the game, and \"Return to base\" can't keep E from acting,",
+            Feature.TameHover => "a tame's text says [E] Pet and never shows \"Return to base\", as in the game (its key still works),",
+            Feature.SaddleInteract => "E always rides at a saddle, even with a key held,",
+            Feature.SaddleHover => "a saddle's text shows no keys of House Trained (they still work),",
+            Feature.GroundIdle => "tames wander off a Hoarstone's ground and don't walk back to it,",
+            Feature.GroundTarget => "tames neither guard a Hoarstone's ground nor let go of an enemy off it,",
+            Feature.GroundFollow => "a following tame leaves a Hoarstone's ground whatever \"… they may leave it while following you\" says,",
+            Feature.TameStayMark => "a tame told to stay that isn't a wolf, led far from its spot, may be taken for a spawner's tame by \"Ignore a far-away spawn point\",",
+            Feature.TameDeathLog => "tames' deaths aren't written to the log,",
+            Feature.TameRemovedLog => "tames' removals aren't written to the log,",
             _ => "tames from a spawner run back toward it, as in the game,",
         };
     }

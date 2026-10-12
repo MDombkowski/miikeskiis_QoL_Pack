@@ -206,12 +206,12 @@ namespace Terraformer
                 {
                     return true;   // the game's own stroke, untouched and not recorded
                 }
-                player.Message(MessageHud.MessageType.Center, "The ground here is still loading.");
+                QoLMods.Kit.Say.Center("The ground here is still loading.");
                 return false;
             }
             if (tool != null && tool.Digs && !CanDig(tool, op.m_settings, numbers, at, turn))
             {
-                player.Message(MessageHud.MessageType.Center, "Ground cannot be lowered further.");
+                QoLMods.Kit.Say.Center("Ground cannot be lowered further.");
                 return false;
             }
             if (tool != null && tool.IsSlope && !SlopeClick(player, ref numbers, ref square, ref reach))
@@ -247,7 +247,7 @@ namespace Terraformer
             SlopeStroke slope = Ghost.SlopeNow(player, numbers, square);
             if (slope == null || !slope.HasPlane)
             {
-                player.Message(MessageHud.MessageType.Center, "The ground here is still loading.");
+                QoLMods.Kit.Say.Center("The ground here is still loading.");
                 return false;
             }
             // A click that would change nothing (only raise on ground above the slope, or ground already on it with its
@@ -255,7 +255,7 @@ namespace Terraformer
             Preview.Slope(slope, GroundLookup.Reader, Checked);
             if (Checked.Count > 0 && !SlopeTool.ChangesAnything(Checked, slope.Flags))
             {
-                player.Message(MessageHud.MessageType.Center, "Nothing here to slope.");
+                QoLMods.Kit.Say.Center("Nothing here to slope.");
                 return false;
             }
             numbers.Plane = slope.Plane;

@@ -1,6 +1,7 @@
 using BepInEx.Configuration;
 using QoLMods.Chests;
 using QoLMods.Kit;
+using QoLMods.ListPicker;
 
 namespace TopperUpper
 {
@@ -15,8 +16,8 @@ namespace TopperUpper
     /// <summary>
     /// The loose-item pickup's settings (card A77's "Loose items"): the part "Loose items", its own band of orders (249 down
     /// to 200), bound between "Linking and products" and "Friends and the server". Keys are permanent from 0.1.0. The
-    /// pickup is off out of the box (his "off at first", until his friend switches the server's own pickup off); the log
-    /// fix is its own switch, on.
+    /// pickup is on out of the box since 0.4.0 (card B05; his "off at first" held until the server's own pickup was gone,
+    /// and a file still holding the old off moves once); the log fix is its own switch, on.
     /// </summary>
     internal static partial class Settings
     {
@@ -41,19 +42,23 @@ namespace TopperUpper
         static partial void BindLooseItems(ModuleSettings settings)
         {
             BeginFold(LoosePart, LooseOrderTop);
-            PickUpLoose = Add(LoosePart, "PickUpLoose", false, "Pick up loose items into chests",
-                "Items lying on the ground near you go into nearby chests that already hold them, in batches: one put and one " +
-                "line per chest (\"Stone x87\"), a few frames' work for a whole stone deposit, and never a request to another " +
-                "player's game. Only what your own game looks after (what you mined, chopped or killed, what fell near you " +
-                "first); a few seconds after it's made, once it lies still on something or floats in water; never near a player, " +
-                "nor what you dropped on purpose (until the area loads again: the game forgets that mark). Off out of the box " +
-                "until the server's own pickup (ServersideQoL's AutoStore, AutoPickup) is switched off: while that still runs, " +
-                "it asks for every item first and floods as before (when the server asks for one, Topper-Upper says so once, in " +
-                "the log and on screen). Keep it off while another mod picks up loose items " +
-                "(AzuAutoStore, McAutoStore and the like).");
+            PickUpLoose = Add(LoosePart, "PickUpLoose", true, "Pick up loose items into chests",
+                "Items lying on the ground within Topper-Upper's own \"Chest range\" (at the top) of you go into chests within \"Range from the item " +
+                "to the chest\" (below) that already hold them, in batches: one put and one line per chest (\"Stone x87\"), a " +
+                "few frames' work for a whole stone deposit, and never a request to another player's game. Only what your own " +
+                "game looks after (what you mined, chopped or killed, what fell near you first); a few seconds after it's made, " +
+                "once it lies still on something or floats in water; never near a player, nor what you dropped on purpose " +
+                "(until the area loads again: the game forgets that mark). With miikeskii's Server-Side QoL Pack on the server, " +
+                "friends' drops near you can be handed to your game to put away too. If a mod on the server picks up loose " +
+                "items itself, it asks for every item first and takes them before this does; Topper-Upper then says so once, in " +
+                "the log and on screen. Keep this off while another mod in your game picks up loose items.");
+            // On since 0.4.0 (card B05): a file written while it was off out of the box moves once (MODULES.md rule 4).
+            settings.MovedDefault(PickUpLoose, false, 1);
             LooseRange = Add(LoosePart, "LooseRange", 64f, "Range from the item to the chest (metres)",
-                "How far from an item a chest may be to take it. ServersideQoL used 64.",
-                new AcceptableValueRange<float>(1f, ChestSettings.MostRange));
+                "How far from an item a chest may be to take it. " + ZeroFollows("from the item"),
+                new AcceptableValueRange<float>(0f, ChestSettings.MostRange));
+            ChestSettings.Elsewhere("Topper-Upper, " + LoosePart, "Range from the item to the chest (metres)", LooseRange,
+                                    "from each loose item");   // card B13
             LooseWait = Add(LoosePart, "LooseWait", 3f, "Wait after it's made (seconds)",
                 "How long after it's made an item is left before it's put away, so a falling deposit's stones have landed and " +
                 "the game's own pickup gets its turn. An item still rolling or hanging in mid-air waits on after that; one " +
@@ -61,11 +66,21 @@ namespace TopperUpper
                 new AcceptableValueRange<float>(0.5f, 60f));
             LoosePlayerDistance = Add(LoosePart, "LoosePlayerDistance", 4f, "Leave items near a player (metres)",
                 "Items within this distance of any player stay on the ground, so they can be picked up by hand; once everyone " +
-                "has walked away they're put away. ServersideQoL used 4. 0: no such rule.",
+                "has walked away they're put away. 0: no such rule.",
                 new AcceptableValueRange<float>(0f, 30f));
             LooseNever = Add(LoosePart, "LooseNever", string.Empty, "Never pick up",
                 "Kinds left on the ground, separated by commas: item types as the game names them (Trophy, Ammo, Fish, " +
                 "Consumable, Material …) or items by prefab name (BoneFragments, Coins).");
+            // Its Pick button in F1 (card B03): items and the game's item types picked from pictures, the text written as
+            // NeverList reads it (commas or semicolons, any case).
+            Lists.Attach(LooseNever, new ListSpec
+            {
+                Module = Module.Name,
+                Kinds = new[] { ThingKind.Items, ThingKind.ItemTypes },
+                Format = new ListFormat { Separators = ",;\n\r", Joiner = ", " },
+                Says = "Kinds of item left on the ground, and single items.",
+                Warn = Module.Warn,
+            });
             LooseDropped = Add(LoosePart, "LooseDropped", false, "Also items dropped on purpose",
                 "An item you drop from your inventory is one the game won't pick up by itself either; it's left alone. The game " +
                 "keeps that mark only on the computer of the player who dropped it, and forgets it when the area loads again, " +
@@ -102,7 +117,7 @@ namespace TopperUpper
                 "How many chests one frame's items may go into; the next frame goes on to the next chests.",
                 new AcceptableValueRange<int>(1, 16));
             SkipRepeatAskLog = Add(LoosePart, "SkipRepeatAskLog", true, "Skip the log line for a repeat ownership request",
-                "When another game (the server's ServersideQoL, mostly) asks yours for an item your game no longer looks after, " +
+                "When another game (a mod on the server that picks items up, mostly) asks yours for an item your game no longer looks after, " +
                 "the game only writes a log line or two and does nothing else; most of those lines in your log are such repeats. " +
                 "On: those asks are skipped without the lines, and one line a minute says how many were skipped and from how many " +
                 "askers. An item your game does look after is still handed over exactly as the game does it, with its line. " +

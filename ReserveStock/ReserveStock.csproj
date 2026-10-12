@@ -18,7 +18,7 @@
     <TargetFramework>net472</TargetFramework>
     <AssemblyName>ReserveStock</AssemblyName>
     <RootNamespace>ReserveStock</RootNamespace>
-    <Version>0.1.10</Version>
+    <Version>0.1.13</Version>
     <!-- Keep the private repo's commit id out of the DLL's version text. -->
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <LangVersion>10.0</LangVersion>
@@ -85,6 +85,15 @@
       <Private>false</Private>
     </Reference>
 
+    <!-- The chest service's "Use this range in every mod", drawn in a configuration manager's window (card B13) -->
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(ValheimManaged)\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(ValheimManaged)\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <!-- BepInEx, HarmonyX and Jotunn, from the mod profile -->
     <Reference Include="BepInEx">
       <HintPath>$(ModProfile)\BepInEx\core\BepInEx.dll</HintPath>

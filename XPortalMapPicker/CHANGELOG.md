@@ -1,14 +1,18 @@
 # Changelog
 
+## 0.6.3 (2026-10-11)
+
+- **Messages fit the screen**: a message line too wide for your screen is broken at spaces into lines that fit, measured by the game's own text, as every mod of miikeskii's QoL Pack now does.
+
 ## 0.6.2 (2026-10-08)
 
-- **XPortal's portal window can no longer lock you in** (card A71). XPortal gives its window the game's window group at the lowest priority, and the game makes such a window's buttons dead while any other window group of a higher priority is open, even an unseen one: at the portal at the world's centre, after dying and respawning there, the pointer moved but nothing lit up, Escape did nothing and only Alt+F4 got miikeskii out. While the window shows, the Map Picker now lifts it above every other window group, so its buttons, Enter (OK) and Escape (Cancel) work again.
+- **XPortal's portal window can no longer lock you in**. XPortal gives its window the game's window group at the lowest priority, and the game makes such a window's buttons dead while any other window group of a higher priority is open, even an unseen one: at the portal at the world's centre, after dying and respawning there, the pointer moved but nothing lit up, Escape did nothing and only Alt+F4 got miikeskii out. While the window shows, the Map Picker now lifts it above every other window group, so its buttons, Enter (OK) and Escape (Cancel) work again.
 - If the window is ever still dead, **Enter presses OK and Escape presses Cancel** for it (his ask), and the log says so.
 - Each time the window opens with another window group in front of it, the log names that window, to find out which it was.
 
 ## 0.6.1 (2026-10-06)
 
-- **miikeskii's own settings are the defaults now** (card A63): "Portals on the large map" and "Portals on the minimap" are on out of the box.
+- **miikeskii's own settings are the defaults now**: "Portals on the large map" and "Portals on the minimap" are on out of the box.
 - An older settings file moves to the new defaults once, only where it still holds the old default: a setting changed by hand stays as it is (the kit's new `ModuleSettings.MovedDefault`, remembered in a hidden setting, `DefaultsMoved`). The log names what moved.
 
 ## 0.6.0 (2026-09-29)

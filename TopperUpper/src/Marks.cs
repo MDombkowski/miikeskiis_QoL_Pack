@@ -261,7 +261,7 @@ namespace TopperUpper
         }
 
         /// <summary>A line in the middle of the screen.</summary>
-        internal static void Show(string text) => MessageHud.instance?.ShowMessage(MessageHud.MessageType.Center, text);
+        internal static void Show(string text) => QoLMods.Kit.Say.Center(text);   // fitted to the screen (card B14)
 
         private sealed class Pending
         {
